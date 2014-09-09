@@ -47,6 +47,33 @@ require.relative = function (parent) {
   };
 
 
+require.register("browser/escape-string-regexp.js", function(module, exports, require){
+'use strict';
+
+var matchOperatorsRe = /[|\\{}()[\]^$+*?.]/g;
+
+module.exports = function (str) {
+	if (typeof str !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	return str.replace(matchOperatorsRe,  '\\$&');
+};
+
+}); // module: browser/escape-string-regexp.js
+
+require.register("browser/fs.js", function(module, exports, require){
+
+}); // module: browser/fs.js
+
+require.register("browser/glob.js", function(module, exports, require){
+
+}); // module: browser/glob.js
+
+require.register("browser/path.js", function(module, exports, require){
+
+}); // module: browser/path.js
+
 require.register("browser/debug.js", function(module, exports, require){
 
 module.exports = function(type){
@@ -55,6 +82,553 @@ module.exports = function(type){
 };
 
 }); // module: browser/debug.js
+
+require.register("browser/events.js", function(module, exports, require){
+
+/**
+ * Module exports.
+ */
+
+exports.EventEmitter = EventEmitter;
+
+/**
+ * Check if `obj` is an array.
+ */
+
+function isArray(obj) {
+  return '[object Array]' == {}.toString.call(obj);
+}
+
+/**
+ * Event emitter constructor.
+ *
+ * @api public
+ */
+
+function EventEmitter(){};
+
+/**
+ * Adds a listener.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.on = function (name, fn) {
+  if (!this.$events) {
+    this.$events = {};
+  }
+
+  if (!this.$events[name]) {
+    this.$events[name] = fn;
+  } else if (isArray(this.$events[name])) {
+    this.$events[name].push(fn);
+  } else {
+    this.$events[name] = [this.$events[name], fn];
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.addListener = EventEmitter.prototype.on;
+
+/**
+ * Adds a volatile listener.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.once = function (name, fn) {
+  var self = this;
+
+  function on () {
+    self.removeListener(name, on);
+    fn.apply(this, arguments);
+  };
+
+  on.listener = fn;
+  this.on(name, on);
+
+  return this;
+};
+
+/**
+ * Removes a listener.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.removeListener = function (name, fn) {
+  if (this.$events && this.$events[name]) {
+    var list = this.$events[name];
+
+    if (isArray(list)) {
+      var pos = -1;
+
+      for (var i = 0, l = list.length; i < l; i++) {
+        if (list[i] === fn || (list[i].listener && list[i].listener === fn)) {
+          pos = i;
+          break;
+        }
+      }
+
+      if (pos < 0) {
+        return this;
+      }
+
+      list.splice(pos, 1);
+
+      if (!list.length) {
+        delete this.$events[name];
+      }
+    } else if (list === fn || (list.listener && list.listener === fn)) {
+      delete this.$events[name];
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Removes all listeners for an event.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.removeAllListeners = function (name) {
+  if (name === undefined) {
+    this.$events = {};
+    return this;
+  }
+
+  if (this.$events && this.$events[name]) {
+    this.$events[name] = null;
+  }
+
+  return this;
+};
+
+/**
+ * Gets all listeners for a certain event.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.listeners = function (name) {
+  if (!this.$events) {
+    this.$events = {};
+  }
+
+  if (!this.$events[name]) {
+    this.$events[name] = [];
+  }
+
+  if (!isArray(this.$events[name])) {
+    this.$events[name] = [this.$events[name]];
+  }
+
+  return this.$events[name];
+};
+
+/**
+ * Emits an event.
+ *
+ * @api public
+ */
+
+EventEmitter.prototype.emit = function (name) {
+  if (!this.$events) {
+    return false;
+  }
+
+  var handler = this.$events[name];
+
+  if (!handler) {
+    return false;
+  }
+
+  var args = [].slice.call(arguments, 1);
+
+  if ('function' == typeof handler) {
+    handler.apply(this, args);
+  } else if (isArray(handler)) {
+    var listeners = handler.slice();
+
+    for (var i = 0, l = listeners.length; i < l; i++) {
+      listeners[i].apply(this, args);
+    }
+  } else {
+    return false;
+  }
+
+  return true;
+};
+}); // module: browser/events.js
+
+require.register("browser/progress.js", function(module, exports, require){
+/**
+ * Expose `Progress`.
+ */
+
+module.exports = Progress;
+
+/**
+ * Initialize a new `Progress` indicator.
+ */
+
+function Progress() {
+  this.percent = 0;
+  this.size(0);
+  this.fontSize(11);
+  this.font('helvetica, arial, sans-serif');
+}
+
+/**
+ * Set progress size to `n`.
+ *
+ * @param {Number} n
+ * @return {Progress} for chaining
+ * @api public
+ */
+
+Progress.prototype.size = function(n){
+  this._size = n;
+  return this;
+};
+
+/**
+ * Set text to `str`.
+ *
+ * @param {String} str
+ * @return {Progress} for chaining
+ * @api public
+ */
+
+Progress.prototype.text = function(str){
+  this._text = str;
+  return this;
+};
+
+/**
+ * Set font size to `n`.
+ *
+ * @param {Number} n
+ * @return {Progress} for chaining
+ * @api public
+ */
+
+Progress.prototype.fontSize = function(n){
+  this._fontSize = n;
+  return this;
+};
+
+/**
+ * Set font `family`.
+ *
+ * @param {String} family
+ * @return {Progress} for chaining
+ */
+
+Progress.prototype.font = function(family){
+  this._font = family;
+  return this;
+};
+
+/**
+ * Update percentage to `n`.
+ *
+ * @param {Number} n
+ * @return {Progress} for chaining
+ */
+
+Progress.prototype.update = function(n){
+  this.percent = n;
+  return this;
+};
+
+/**
+ * Draw on `ctx`.
+ *
+ * @param {CanvasRenderingContext2d} ctx
+ * @return {Progress} for chaining
+ */
+
+Progress.prototype.draw = function(ctx){
+  try {
+    var percent = Math.min(this.percent, 100)
+      , size = this._size
+      , half = size / 2
+      , x = half
+      , y = half
+      , rad = half - 1
+      , fontSize = this._fontSize;
+  
+    ctx.font = fontSize + 'px ' + this._font;
+  
+    var angle = Math.PI * 2 * (percent / 100);
+    ctx.clearRect(0, 0, size, size);
+  
+    // outer circle
+    ctx.strokeStyle = '#9f9f9f';
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, angle, false);
+    ctx.stroke();
+  
+    // inner circle
+    ctx.strokeStyle = '#eee';
+    ctx.beginPath();
+    ctx.arc(x, y, rad - 1, 0, angle, true);
+    ctx.stroke();
+  
+    // text
+    var text = this._text || (percent | 0) + '%'
+      , w = ctx.measureText(text).width;
+  
+    ctx.fillText(
+        text
+      , x - w / 2 + 1
+      , y + fontSize / 2 - 1);
+  } catch (ex) {} //don't fail if we can't render progress
+  return this;
+};
+
+}); // module: browser/progress.js
+
+require.register("context.js", function(module, exports, require){
+
+/**
+ * Expose `Context`.
+ */
+
+module.exports = Context;
+
+/**
+ * Initialize a new `Context`.
+ *
+ * @api private
+ */
+
+function Context(){}
+
+/**
+ * Set or get the context `Runnable` to `runnable`.
+ *
+ * @param {Runnable} runnable
+ * @return {Context}
+ * @api private
+ */
+
+Context.prototype.runnable = function(runnable){
+  if (0 == arguments.length) return this._runnable;
+  this.test = this._runnable = runnable;
+  return this;
+};
+
+/**
+ * Set test timeout `ms`.
+ *
+ * @param {Number} ms
+ * @return {Context} self
+ * @api private
+ */
+
+Context.prototype.timeout = function(ms){
+  if (arguments.length === 0) return this.runnable().timeout();
+  this.runnable().timeout(ms);
+  return this;
+};
+
+/**
+ * Set test timeout `enabled`.
+ *
+ * @param {Boolean} enabled
+ * @return {Context} self
+ * @api private
+ */
+
+Context.prototype.enableTimeouts = function (enabled) {
+  this.runnable().enableTimeouts(enabled);
+  return this;
+};
+
+
+/**
+ * Set test slowness threshold `ms`.
+ *
+ * @param {Number} ms
+ * @return {Context} self
+ * @api private
+ */
+
+Context.prototype.slow = function(ms){
+  this.runnable().slow(ms);
+  return this;
+};
+
+/**
+ * Inspect the context void of `._runnable`.
+ *
+ * @return {String}
+ * @api private
+ */
+
+Context.prototype.inspect = function(){
+  return JSON.stringify(this, function(key, val){
+    if ('_runnable' == key) return;
+    if ('test' == key) return;
+    return val;
+  }, 2);
+};
+
+}); // module: context.js
+
+require.register("browser/tty.js", function(module, exports, require){
+
+exports.isatty = function(){
+  return true;
+};
+
+exports.getWindowSize = function(){
+  if ('innerHeight' in global) {
+    return [global.innerHeight, global.innerWidth];
+  } else {
+    // In a Web Worker, the DOM Window is not available.
+    return [640, 480];
+  }
+};
+
+}); // module: browser/tty.js
+
+require.register("hook.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var Runnable = require('./runnable');
+
+/**
+ * Expose `Hook`.
+ */
+
+module.exports = Hook;
+
+/**
+ * Initialize a new `Hook` with the given `title` and callback `fn`.
+ *
+ * @param {String} title
+ * @param {Function} fn
+ * @api private
+ */
+
+function Hook(title, fn) {
+  Runnable.call(this, title, fn);
+  this.type = 'hook';
+}
+
+/**
+ * Inherit from `Runnable.prototype`.
+ */
+
+function F(){};
+F.prototype = Runnable.prototype;
+Hook.prototype = new F;
+Hook.prototype.constructor = Hook;
+
+
+/**
+ * Get or set the test `err`.
+ *
+ * @param {Error} err
+ * @return {Error}
+ * @api public
+ */
+
+Hook.prototype.error = function(err){
+  if (0 == arguments.length) {
+    var err = this._error;
+    this._error = null;
+    return err;
+  }
+
+  this._error = err;
+};
+
+}); // module: hook.js
+
+require.register("interfaces/exports.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var Suite = require('../suite')
+  , Test = require('../test');
+
+/**
+ * TDD-style interface:
+ *
+ *     exports.Array = {
+ *       '#indexOf()': {
+ *         'should return -1 when the value is not present': function(){
+ *
+ *         },
+ *
+ *         'should return the correct index when the value is present': function(){
+ *
+ *         }
+ *       }
+ *     };
+ *
+ */
+
+module.exports = function(suite){
+  var suites = [suite];
+
+  suite.on('require', visit);
+
+  function visit(obj, file) {
+    var suite;
+    for (var key in obj) {
+      if ('function' == typeof obj[key]) {
+        var fn = obj[key];
+        switch (key) {
+          case 'before':
+            suites[0].beforeAll(fn);
+            break;
+          case 'after':
+            suites[0].afterAll(fn);
+            break;
+          case 'beforeEach':
+            suites[0].beforeEach(fn);
+            break;
+          case 'afterEach':
+            suites[0].afterEach(fn);
+            break;
+          default:
+            var test = new Test(key, fn);
+            test.file = file;
+            suites[0].addTest(test);
+        }
+      } else {
+        var suite = Suite.create(suites[0], key);
+        suites.unshift(suite);
+        visit(obj[key]);
+        suites.shift();
+      }
+    }
+  }
+};
+
+}); // module: interfaces/exports.js
+
+require.register("interfaces/index.js", function(module, exports, require){
+
+exports.bdd = require('./bdd');
+exports.tdd = require('./tdd');
+exports.qunit = require('./qunit');
+exports.exports = require('./exports');
+
+}); // module: interfaces/index.js
 
 require.register("browser/diff.js", function(module, exports, require){
 /* See LICENSE file for terms of use */
@@ -414,505 +988,6 @@ if (typeof module !== 'undefined') {
 
 }); // module: browser/diff.js
 
-require.register("browser/escape-string-regexp.js", function(module, exports, require){
-'use strict';
-
-var matchOperatorsRe = /[|\\{}()[\]^$+*?.]/g;
-
-module.exports = function (str) {
-	if (typeof str !== 'string') {
-		throw new TypeError('Expected a string');
-	}
-
-	return str.replace(matchOperatorsRe,  '\\$&');
-};
-
-}); // module: browser/escape-string-regexp.js
-
-require.register("browser/events.js", function(module, exports, require){
-
-/**
- * Module exports.
- */
-
-exports.EventEmitter = EventEmitter;
-
-/**
- * Check if `obj` is an array.
- */
-
-function isArray(obj) {
-  return '[object Array]' == {}.toString.call(obj);
-}
-
-/**
- * Event emitter constructor.
- *
- * @api public
- */
-
-function EventEmitter(){};
-
-/**
- * Adds a listener.
- *
- * @api public
- */
-
-EventEmitter.prototype.on = function (name, fn) {
-  if (!this.$events) {
-    this.$events = {};
-  }
-
-  if (!this.$events[name]) {
-    this.$events[name] = fn;
-  } else if (isArray(this.$events[name])) {
-    this.$events[name].push(fn);
-  } else {
-    this.$events[name] = [this.$events[name], fn];
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.addListener = EventEmitter.prototype.on;
-
-/**
- * Adds a volatile listener.
- *
- * @api public
- */
-
-EventEmitter.prototype.once = function (name, fn) {
-  var self = this;
-
-  function on () {
-    self.removeListener(name, on);
-    fn.apply(this, arguments);
-  };
-
-  on.listener = fn;
-  this.on(name, on);
-
-  return this;
-};
-
-/**
- * Removes a listener.
- *
- * @api public
- */
-
-EventEmitter.prototype.removeListener = function (name, fn) {
-  if (this.$events && this.$events[name]) {
-    var list = this.$events[name];
-
-    if (isArray(list)) {
-      var pos = -1;
-
-      for (var i = 0, l = list.length; i < l; i++) {
-        if (list[i] === fn || (list[i].listener && list[i].listener === fn)) {
-          pos = i;
-          break;
-        }
-      }
-
-      if (pos < 0) {
-        return this;
-      }
-
-      list.splice(pos, 1);
-
-      if (!list.length) {
-        delete this.$events[name];
-      }
-    } else if (list === fn || (list.listener && list.listener === fn)) {
-      delete this.$events[name];
-    }
-  }
-
-  return this;
-};
-
-/**
- * Removes all listeners for an event.
- *
- * @api public
- */
-
-EventEmitter.prototype.removeAllListeners = function (name) {
-  if (name === undefined) {
-    this.$events = {};
-    return this;
-  }
-
-  if (this.$events && this.$events[name]) {
-    this.$events[name] = null;
-  }
-
-  return this;
-};
-
-/**
- * Gets all listeners for a certain event.
- *
- * @api public
- */
-
-EventEmitter.prototype.listeners = function (name) {
-  if (!this.$events) {
-    this.$events = {};
-  }
-
-  if (!this.$events[name]) {
-    this.$events[name] = [];
-  }
-
-  if (!isArray(this.$events[name])) {
-    this.$events[name] = [this.$events[name]];
-  }
-
-  return this.$events[name];
-};
-
-/**
- * Emits an event.
- *
- * @api public
- */
-
-EventEmitter.prototype.emit = function (name) {
-  if (!this.$events) {
-    return false;
-  }
-
-  var handler = this.$events[name];
-
-  if (!handler) {
-    return false;
-  }
-
-  var args = [].slice.call(arguments, 1);
-
-  if ('function' == typeof handler) {
-    handler.apply(this, args);
-  } else if (isArray(handler)) {
-    var listeners = handler.slice();
-
-    for (var i = 0, l = listeners.length; i < l; i++) {
-      listeners[i].apply(this, args);
-    }
-  } else {
-    return false;
-  }
-
-  return true;
-};
-}); // module: browser/events.js
-
-require.register("browser/fs.js", function(module, exports, require){
-
-}); // module: browser/fs.js
-
-require.register("browser/glob.js", function(module, exports, require){
-
-}); // module: browser/glob.js
-
-require.register("browser/path.js", function(module, exports, require){
-
-}); // module: browser/path.js
-
-require.register("browser/progress.js", function(module, exports, require){
-/**
- * Expose `Progress`.
- */
-
-module.exports = Progress;
-
-/**
- * Initialize a new `Progress` indicator.
- */
-
-function Progress() {
-  this.percent = 0;
-  this.size(0);
-  this.fontSize(11);
-  this.font('helvetica, arial, sans-serif');
-}
-
-/**
- * Set progress size to `n`.
- *
- * @param {Number} n
- * @return {Progress} for chaining
- * @api public
- */
-
-Progress.prototype.size = function(n){
-  this._size = n;
-  return this;
-};
-
-/**
- * Set text to `str`.
- *
- * @param {String} str
- * @return {Progress} for chaining
- * @api public
- */
-
-Progress.prototype.text = function(str){
-  this._text = str;
-  return this;
-};
-
-/**
- * Set font size to `n`.
- *
- * @param {Number} n
- * @return {Progress} for chaining
- * @api public
- */
-
-Progress.prototype.fontSize = function(n){
-  this._fontSize = n;
-  return this;
-};
-
-/**
- * Set font `family`.
- *
- * @param {String} family
- * @return {Progress} for chaining
- */
-
-Progress.prototype.font = function(family){
-  this._font = family;
-  return this;
-};
-
-/**
- * Update percentage to `n`.
- *
- * @param {Number} n
- * @return {Progress} for chaining
- */
-
-Progress.prototype.update = function(n){
-  this.percent = n;
-  return this;
-};
-
-/**
- * Draw on `ctx`.
- *
- * @param {CanvasRenderingContext2d} ctx
- * @return {Progress} for chaining
- */
-
-Progress.prototype.draw = function(ctx){
-  try {
-    var percent = Math.min(this.percent, 100)
-      , size = this._size
-      , half = size / 2
-      , x = half
-      , y = half
-      , rad = half - 1
-      , fontSize = this._fontSize;
-  
-    ctx.font = fontSize + 'px ' + this._font;
-  
-    var angle = Math.PI * 2 * (percent / 100);
-    ctx.clearRect(0, 0, size, size);
-  
-    // outer circle
-    ctx.strokeStyle = '#9f9f9f';
-    ctx.beginPath();
-    ctx.arc(x, y, rad, 0, angle, false);
-    ctx.stroke();
-  
-    // inner circle
-    ctx.strokeStyle = '#eee';
-    ctx.beginPath();
-    ctx.arc(x, y, rad - 1, 0, angle, true);
-    ctx.stroke();
-  
-    // text
-    var text = this._text || (percent | 0) + '%'
-      , w = ctx.measureText(text).width;
-  
-    ctx.fillText(
-        text
-      , x - w / 2 + 1
-      , y + fontSize / 2 - 1);
-  } catch (ex) {} //don't fail if we can't render progress
-  return this;
-};
-
-}); // module: browser/progress.js
-
-require.register("browser/tty.js", function(module, exports, require){
-
-exports.isatty = function(){
-  return true;
-};
-
-exports.getWindowSize = function(){
-  if ('innerHeight' in global) {
-    return [global.innerHeight, global.innerWidth];
-  } else {
-    // In a Web Worker, the DOM Window is not available.
-    return [640, 480];
-  }
-};
-
-}); // module: browser/tty.js
-
-require.register("context.js", function(module, exports, require){
-
-/**
- * Expose `Context`.
- */
-
-module.exports = Context;
-
-/**
- * Initialize a new `Context`.
- *
- * @api private
- */
-
-function Context(){}
-
-/**
- * Set or get the context `Runnable` to `runnable`.
- *
- * @param {Runnable} runnable
- * @return {Context}
- * @api private
- */
-
-Context.prototype.runnable = function(runnable){
-  if (0 == arguments.length) return this._runnable;
-  this.test = this._runnable = runnable;
-  return this;
-};
-
-/**
- * Set test timeout `ms`.
- *
- * @param {Number} ms
- * @return {Context} self
- * @api private
- */
-
-Context.prototype.timeout = function(ms){
-  if (arguments.length === 0) return this.runnable().timeout();
-  this.runnable().timeout(ms);
-  return this;
-};
-
-/**
- * Set test timeout `enabled`.
- *
- * @param {Boolean} enabled
- * @return {Context} self
- * @api private
- */
-
-Context.prototype.enableTimeouts = function (enabled) {
-  this.runnable().enableTimeouts(enabled);
-  return this;
-};
-
-
-/**
- * Set test slowness threshold `ms`.
- *
- * @param {Number} ms
- * @return {Context} self
- * @api private
- */
-
-Context.prototype.slow = function(ms){
-  this.runnable().slow(ms);
-  return this;
-};
-
-/**
- * Inspect the context void of `._runnable`.
- *
- * @return {String}
- * @api private
- */
-
-Context.prototype.inspect = function(){
-  return JSON.stringify(this, function(key, val){
-    if ('_runnable' == key) return;
-    if ('test' == key) return;
-    return val;
-  }, 2);
-};
-
-}); // module: context.js
-
-require.register("hook.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Runnable = require('./runnable');
-
-/**
- * Expose `Hook`.
- */
-
-module.exports = Hook;
-
-/**
- * Initialize a new `Hook` with the given `title` and callback `fn`.
- *
- * @param {String} title
- * @param {Function} fn
- * @api private
- */
-
-function Hook(title, fn) {
-  Runnable.call(this, title, fn);
-  this.type = 'hook';
-}
-
-/**
- * Inherit from `Runnable.prototype`.
- */
-
-function F(){};
-F.prototype = Runnable.prototype;
-Hook.prototype = new F;
-Hook.prototype.constructor = Hook;
-
-
-/**
- * Get or set the test `err`.
- *
- * @param {Error} err
- * @return {Error}
- * @api public
- */
-
-Hook.prototype.error = function(err){
-  if (0 == arguments.length) {
-    var err = this._error;
-    this._error = null;
-    return err;
-  }
-
-  this._error = err;
-};
-
-}); // module: hook.js
-
 require.register("interfaces/bdd.js", function(module, exports, require){
 
 /**
@@ -921,7 +996,6 @@ require.register("interfaces/bdd.js", function(module, exports, require){
 
 var Suite = require('../suite')
   , Test = require('../test')
-  , utils = require('../utils')
   , escapeRe = require('browser/escape-string-regexp');
 
 /**
@@ -1057,210 +1131,6 @@ module.exports = function(suite){
 
 }); // module: interfaces/bdd.js
 
-require.register("interfaces/exports.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Suite = require('../suite')
-  , Test = require('../test');
-
-/**
- * TDD-style interface:
- *
- *     exports.Array = {
- *       '#indexOf()': {
- *         'should return -1 when the value is not present': function(){
- *
- *         },
- *
- *         'should return the correct index when the value is present': function(){
- *
- *         }
- *       }
- *     };
- *
- */
-
-module.exports = function(suite){
-  var suites = [suite];
-
-  suite.on('require', visit);
-
-  function visit(obj, file) {
-    var suite;
-    for (var key in obj) {
-      if ('function' == typeof obj[key]) {
-        var fn = obj[key];
-        switch (key) {
-          case 'before':
-            suites[0].beforeAll(fn);
-            break;
-          case 'after':
-            suites[0].afterAll(fn);
-            break;
-          case 'beforeEach':
-            suites[0].beforeEach(fn);
-            break;
-          case 'afterEach':
-            suites[0].afterEach(fn);
-            break;
-          default:
-            var test = new Test(key, fn);
-            test.file = file;
-            suites[0].addTest(test);
-        }
-      } else {
-        var suite = Suite.create(suites[0], key);
-        suites.unshift(suite);
-        visit(obj[key]);
-        suites.shift();
-      }
-    }
-  }
-};
-
-}); // module: interfaces/exports.js
-
-require.register("interfaces/index.js", function(module, exports, require){
-
-exports.bdd = require('./bdd');
-exports.tdd = require('./tdd');
-exports.qunit = require('./qunit');
-exports.exports = require('./exports');
-
-}); // module: interfaces/index.js
-
-require.register("interfaces/qunit.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Suite = require('../suite')
-  , Test = require('../test')
-  , escapeRe = require('browser/escape-string-regexp')
-  , utils = require('../utils');
-
-/**
- * QUnit-style interface:
- *
- *     suite('Array');
- *
- *     test('#length', function(){
- *       var arr = [1,2,3];
- *       ok(arr.length == 3);
- *     });
- *
- *     test('#indexOf()', function(){
- *       var arr = [1,2,3];
- *       ok(arr.indexOf(1) == 0);
- *       ok(arr.indexOf(2) == 1);
- *       ok(arr.indexOf(3) == 2);
- *     });
- *
- *     suite('String');
- *
- *     test('#length', function(){
- *       ok('foo'.length == 3);
- *     });
- *
- */
-
-module.exports = function(suite){
-  var suites = [suite];
-
-  suite.on('pre-require', function(context, file, mocha){
-
-    /**
-     * Execute before running tests.
-     */
-
-    context.before = function(name, fn){
-      suites[0].beforeAll(name, fn);
-    };
-
-    /**
-     * Execute after running tests.
-     */
-
-    context.after = function(name, fn){
-      suites[0].afterAll(name, fn);
-    };
-
-    /**
-     * Execute before each test case.
-     */
-
-    context.beforeEach = function(name, fn){
-      suites[0].beforeEach(name, fn);
-    };
-
-    /**
-     * Execute after each test case.
-     */
-
-    context.afterEach = function(name, fn){
-      suites[0].afterEach(name, fn);
-    };
-
-    /**
-     * Describe a "suite" with the given `title`.
-     */
-
-    context.suite = function(title){
-      if (suites.length > 1) suites.shift();
-      var suite = Suite.create(suites[0], title);
-      suite.file = file;
-      suites.unshift(suite);
-      return suite;
-    };
-
-    /**
-     * Exclusive test-case.
-     */
-
-    context.suite.only = function(title, fn){
-      var suite = context.suite(title, fn);
-      mocha.grep(suite.fullTitle());
-    };
-
-    /**
-     * Describe a specification or test-case
-     * with the given `title` and callback `fn`
-     * acting as a thunk.
-     */
-
-    context.test = function(title, fn){
-      var test = new Test(title, fn);
-      test.file = file;
-      suites[0].addTest(test);
-      return test;
-    };
-
-    /**
-     * Exclusive test-case.
-     */
-
-    context.test.only = function(title, fn){
-      var test = context.test(title, fn);
-      var reString = '^' + escapeRe(test.fullTitle()) + '$';
-      mocha.grep(new RegExp(reString));
-    };
-
-    /**
-     * Pending test case.
-     */
-
-    context.test.skip = function(title){
-      context.test(title);
-    };
-  });
-};
-
-}); // module: interfaces/qunit.js
-
 require.register("interfaces/tdd.js", function(module, exports, require){
 
 /**
@@ -1269,8 +1139,7 @@ require.register("interfaces/tdd.js", function(module, exports, require){
 
 var Suite = require('../suite')
   , Test = require('../test')
-  , escapeRe = require('browser/escape-string-regexp')
-  , utils = require('../utils');;
+  , escapeRe = require('browser/escape-string-regexp');
 
 /**
  * TDD-style interface:
@@ -1406,6 +1275,710 @@ module.exports = function(suite){
 
 }); // module: interfaces/tdd.js
 
+require.register("ms.js", function(module, exports, require){
+/**
+ * Helpers.
+ */
+
+var s = 1000;
+var m = s * 60;
+var h = m * 60;
+var d = h * 24;
+var y = d * 365.25;
+
+/**
+ * Parse or format the given `val`.
+ *
+ * Options:
+ *
+ *  - `long` verbose formatting [false]
+ *
+ * @param {String|Number} val
+ * @param {Object} options
+ * @return {String|Number}
+ * @api public
+ */
+
+module.exports = function(val, options){
+  options = options || {};
+  if ('string' == typeof val) return parse(val);
+  return options['long'] ? longFormat(val) : shortFormat(val);
+};
+
+/**
+ * Parse the given `str` and return milliseconds.
+ *
+ * @param {String} str
+ * @return {Number}
+ * @api private
+ */
+
+function parse(str) {
+  var match = /^((?:\d+)?\.?\d+) *(ms|seconds?|s|minutes?|m|hours?|h|days?|d|years?|y)?$/i.exec(str);
+  if (!match) return;
+  var n = parseFloat(match[1]);
+  var type = (match[2] || 'ms').toLowerCase();
+  switch (type) {
+    case 'years':
+    case 'year':
+    case 'y':
+      return n * y;
+    case 'days':
+    case 'day':
+    case 'd':
+      return n * d;
+    case 'hours':
+    case 'hour':
+    case 'h':
+      return n * h;
+    case 'minutes':
+    case 'minute':
+    case 'm':
+      return n * m;
+    case 'seconds':
+    case 'second':
+    case 's':
+      return n * s;
+    case 'ms':
+      return n;
+  }
+}
+
+/**
+ * Short format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function shortFormat(ms) {
+  if (ms >= d) return Math.round(ms / d) + 'd';
+  if (ms >= h) return Math.round(ms / h) + 'h';
+  if (ms >= m) return Math.round(ms / m) + 'm';
+  if (ms >= s) return Math.round(ms / s) + 's';
+  return ms + 'ms';
+}
+
+/**
+ * Long format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function longFormat(ms) {
+  return plural(ms, d, 'day')
+    || plural(ms, h, 'hour')
+    || plural(ms, m, 'minute')
+    || plural(ms, s, 'second')
+    || ms + ' ms';
+}
+
+/**
+ * Pluralization helper.
+ */
+
+function plural(ms, n, name) {
+  if (ms < n) return;
+  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
+  return Math.ceil(ms / n) + ' ' + name + 's';
+}
+
+}); // module: ms.js
+
+require.register("reporters/base.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var tty = require('browser/tty')
+  , diff = require('browser/diff')
+  , ms = require('../ms')
+  , stringify = require('../utils').stringify;
+
+/**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
+
+/**
+ * Check if both stdio streams are associated with a tty.
+ */
+
+var isatty = tty.isatty(1) && tty.isatty(2);
+
+/**
+ * Expose `Base`.
+ */
+
+exports = module.exports = Base;
+
+/**
+ * Enable coloring by default.
+ */
+
+exports.useColors = isatty || (process.env.MOCHA_COLORS !== undefined);
+
+/**
+ * Inline diffs instead of +/-
+ */
+
+exports.inlineDiffs = false;
+
+/**
+ * Default color map.
+ */
+
+exports.colors = {
+    'pass': 90
+  , 'fail': 31
+  , 'bright pass': 92
+  , 'bright fail': 91
+  , 'bright yellow': 93
+  , 'pending': 36
+  , 'suite': 0
+  , 'error title': 0
+  , 'error message': 31
+  , 'error stack': 90
+  , 'checkmark': 32
+  , 'fast': 90
+  , 'medium': 33
+  , 'slow': 31
+  , 'green': 32
+  , 'light': 90
+  , 'diff gutter': 90
+  , 'diff added': 42
+  , 'diff removed': 41
+};
+
+/**
+ * Default symbol map.
+ */
+
+exports.symbols = {
+  ok: '✓',
+  err: '✖',
+  dot: '․'
+};
+
+// With node.js on Windows: use symbols available in terminal default fonts
+if ('win32' == process.platform) {
+  exports.symbols.ok = '\u221A';
+  exports.symbols.err = '\u00D7';
+  exports.symbols.dot = '.';
+}
+
+/**
+ * Color `str` with the given `type`,
+ * allowing colors to be disabled,
+ * as well as user-defined color
+ * schemes.
+ *
+ * @param {String} type
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+var color = exports.color = function(type, str) {
+  if (!exports.useColors) return str;
+  return '\u001b[' + exports.colors[type] + 'm' + str + '\u001b[0m';
+};
+
+/**
+ * Expose term window size, with some
+ * defaults for when stderr is not a tty.
+ */
+
+exports.window = {
+  width: isatty
+    ? process.stdout.getWindowSize
+      ? process.stdout.getWindowSize(1)[0]
+      : tty.getWindowSize()[1]
+    : 75
+};
+
+/**
+ * Expose some basic cursor interactions
+ * that are common among reporters.
+ */
+
+exports.cursor = {
+  hide: function(){
+    isatty && process.stdout.write('\u001b[?25l');
+  },
+
+  show: function(){
+    isatty && process.stdout.write('\u001b[?25h');
+  },
+
+  deleteLine: function(){
+    isatty && process.stdout.write('\u001b[2K');
+  },
+
+  beginningOfLine: function(){
+    isatty && process.stdout.write('\u001b[0G');
+  },
+
+  CR: function(){
+    if (isatty) {
+      exports.cursor.deleteLine();
+      exports.cursor.beginningOfLine();
+    } else {
+      process.stdout.write('\r');
+    }
+  }
+};
+
+/**
+ * Outut the given `failures` as a list.
+ *
+ * @param {Array} failures
+ * @api public
+ */
+
+exports.list = function(failures){
+  console.error();
+  failures.forEach(function(test, i){
+    // format
+    var fmt = color('error title', '  %s) %s:\n')
+      + color('error message', '     %s')
+      + color('error stack', '\n%s\n');
+
+    // msg
+    var err = test.err
+      , message = err.message || ''
+      , stack = err.stack || message
+      , index = stack.indexOf(message) + message.length
+      , msg = stack.slice(0, index)
+      , actual = err.actual
+      , expected = err.expected
+      , escape = true;
+
+    // uncaught
+    if (err.uncaught) {
+      msg = 'Uncaught ' + msg;
+    }
+
+    // explicitly show diff
+    if (err.showDiff && sameType(actual, expected)) {
+      escape = false;
+      err.actual = actual = stringify(actual);
+      err.expected = expected = stringify(expected);
+    }
+
+    // actual / expected diff
+    if ('string' == typeof actual && 'string' == typeof expected) {
+      fmt = color('error title', '  %s) %s:\n%s') + color('error stack', '\n%s\n');
+      var match = message.match(/^([^:]+): expected/);
+      msg = '\n      ' + color('error message', match ? match[1] : msg);
+
+      if (exports.inlineDiffs) {
+        msg += inlineDiff(err, escape);
+      } else {
+        msg += unifiedDiff(err, escape);
+      }
+    }
+
+    // indent stack trace without msg
+    stack = stack.slice(index ? index + 1 : index)
+      .replace(/^/gm, '  ');
+
+    console.error(fmt, (i + 1), test.fullTitle(), msg, stack);
+  });
+};
+
+/**
+ * Initialize a new `Base` reporter.
+ *
+ * All other reporters generally
+ * inherit from this reporter, providing
+ * stats such as test duration, number
+ * of tests passed / failed etc.
+ *
+ * @param {Runner} runner
+ * @api public
+ */
+
+function Base(runner) {
+  var self = this
+    , stats = this.stats = { suites: 0, tests: 0, passes: 0, pending: 0, failures: 0 }
+    , failures = this.failures = [];
+
+  if (!runner) return;
+  this.runner = runner;
+
+  runner.stats = stats;
+
+  runner.on('start', function(){
+    stats.start = new Date;
+  });
+
+  runner.on('suite', function(suite){
+    stats.suites = stats.suites || 0;
+    suite.root || stats.suites++;
+  });
+
+  runner.on('test end', function(test){
+    stats.tests = stats.tests || 0;
+    stats.tests++;
+  });
+
+  runner.on('pass', function(test){
+    stats.passes = stats.passes || 0;
+
+    var medium = test.slow() / 2;
+    test.speed = test.duration > test.slow()
+      ? 'slow'
+      : test.duration > medium
+        ? 'medium'
+        : 'fast';
+
+    stats.passes++;
+  });
+
+  runner.on('fail', function(test, err){
+    stats.failures = stats.failures || 0;
+    stats.failures++;
+    test.err = err;
+    failures.push(test);
+  });
+
+  runner.on('end', function(){
+    stats.end = new Date;
+    stats.duration = new Date - stats.start;
+  });
+
+  runner.on('pending', function(){
+    stats.pending++;
+  });
+}
+
+/**
+ * Output common epilogue used by many of
+ * the bundled reporters.
+ *
+ * @api public
+ */
+
+Base.prototype.epilogue = function(){
+  var stats = this.stats;
+  var tests;
+  var fmt;
+
+  console.log();
+
+  // passes
+  fmt = color('bright pass', ' ')
+    + color('green', ' %d passing')
+    + color('light', ' (%s)');
+
+  console.log(fmt,
+    stats.passes || 0,
+    ms(stats.duration));
+
+  // pending
+  if (stats.pending) {
+    fmt = color('pending', ' ')
+      + color('pending', ' %d pending');
+
+    console.log(fmt, stats.pending);
+  }
+
+  // failures
+  if (stats.failures) {
+    fmt = color('fail', '  %d failing');
+
+    console.error(fmt,
+      stats.failures);
+
+    Base.list(this.failures);
+    console.error();
+  }
+
+  console.log();
+};
+
+/**
+ * Pad the given `str` to `len`.
+ *
+ * @param {String} str
+ * @param {String} len
+ * @return {String}
+ * @api private
+ */
+
+function pad(str, len) {
+  str = String(str);
+  return Array(len - str.length + 1).join(' ') + str;
+}
+
+
+/**
+ * Returns an inline diff between 2 strings with coloured ANSI output
+ *
+ * @param {Error} Error with actual/expected
+ * @return {String} Diff
+ * @api private
+ */
+
+function inlineDiff(err, escape) {
+  var msg = errorDiff(err, 'WordsWithSpace', escape);
+
+  // linenos
+  var lines = msg.split('\n');
+  if (lines.length > 4) {
+    var width = String(lines.length).length;
+    msg = lines.map(function(str, i){
+      return pad(++i, width) + ' |' + ' ' + str;
+    }).join('\n');
+  }
+
+  // legend
+  msg = '\n'
+    + color('diff removed', 'actual')
+    + ' '
+    + color('diff added', 'expected')
+    + '\n\n'
+    + msg
+    + '\n';
+
+  // indent
+  msg = msg.replace(/^/gm, '      ');
+  return msg;
+}
+
+/**
+ * Returns a unified diff between 2 strings
+ *
+ * @param {Error} Error with actual/expected
+ * @return {String} Diff
+ * @api private
+ */
+
+function unifiedDiff(err, escape) {
+  var indent = '      ';
+  function cleanUp(line) {
+    if (escape) {
+      line = escapeInvisibles(line);
+    }
+    if (line[0] === '+') return indent + colorLines('diff added', line);
+    if (line[0] === '-') return indent + colorLines('diff removed', line);
+    if (line.match(/\@\@/)) return null;
+    if (line.match(/\\ No newline/)) return null;
+    else return indent + line;
+  }
+  function notBlank(line) {
+    return line != null;
+  }
+  msg = diff.createPatch('string', err.actual, err.expected);
+  var lines = msg.split('\n').splice(4);
+  return '\n      '
+         + colorLines('diff added',   '+ expected') + ' '
+         + colorLines('diff removed', '- actual')
+         + '\n\n'
+         + lines.map(cleanUp).filter(notBlank).join('\n');
+}
+
+/**
+ * Return a character diff for `err`.
+ *
+ * @param {Error} err
+ * @return {String}
+ * @api private
+ */
+
+function errorDiff(err, type, escape) {
+  var actual   = escape ? escapeInvisibles(err.actual)   : err.actual;
+  var expected = escape ? escapeInvisibles(err.expected) : err.expected;
+  return diff['diff' + type](actual, expected).map(function(str){
+    if (str.added) return colorLines('diff added', str.value);
+    if (str.removed) return colorLines('diff removed', str.value);
+    return str.value;
+  }).join('');
+}
+
+/**
+ * Returns a string with all invisible characters in plain text
+ *
+ * @param {String} line
+ * @return {String}
+ * @api private
+ */
+function escapeInvisibles(line) {
+    return line.replace(/\t/g, '<tab>')
+               .replace(/\r/g, '<CR>')
+               .replace(/\n/g, '<LF>\n');
+}
+
+/**
+ * Color lines for `str`, using the color `name`.
+ *
+ * @param {String} name
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+function colorLines(name, str) {
+  return str.split('\n').map(function(str){
+    return color(name, str);
+  }).join('\n');
+}
+
+/**
+ * Check that a / b have the same type.
+ *
+ * @param {Object} a
+ * @param {Object} b
+ * @return {Boolean}
+ * @api private
+ */
+
+function sameType(a, b) {
+  a = Object.prototype.toString.call(a);
+  b = Object.prototype.toString.call(b);
+  return a == b;
+}
+
+}); // module: reporters/base.js
+
+require.register("interfaces/qunit.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var Suite = require('../suite')
+  , Test = require('../test')
+  , escapeRe = require('browser/escape-string-regexp');
+
+/**
+ * QUnit-style interface:
+ *
+ *     suite('Array');
+ *
+ *     test('#length', function(){
+ *       var arr = [1,2,3];
+ *       ok(arr.length == 3);
+ *     });
+ *
+ *     test('#indexOf()', function(){
+ *       var arr = [1,2,3];
+ *       ok(arr.indexOf(1) == 0);
+ *       ok(arr.indexOf(2) == 1);
+ *       ok(arr.indexOf(3) == 2);
+ *     });
+ *
+ *     suite('String');
+ *
+ *     test('#length', function(){
+ *       ok('foo'.length == 3);
+ *     });
+ *
+ */
+
+module.exports = function(suite){
+  var suites = [suite];
+
+  suite.on('pre-require', function(context, file, mocha){
+
+    /**
+     * Execute before running tests.
+     */
+
+    context.before = function(name, fn){
+      suites[0].beforeAll(name, fn);
+    };
+
+    /**
+     * Execute after running tests.
+     */
+
+    context.after = function(name, fn){
+      suites[0].afterAll(name, fn);
+    };
+
+    /**
+     * Execute before each test case.
+     */
+
+    context.beforeEach = function(name, fn){
+      suites[0].beforeEach(name, fn);
+    };
+
+    /**
+     * Execute after each test case.
+     */
+
+    context.afterEach = function(name, fn){
+      suites[0].afterEach(name, fn);
+    };
+
+    /**
+     * Describe a "suite" with the given `title`.
+     */
+
+    context.suite = function(title){
+      if (suites.length > 1) suites.shift();
+      var suite = Suite.create(suites[0], title);
+      suite.file = file;
+      suites.unshift(suite);
+      return suite;
+    };
+
+    /**
+     * Exclusive test-case.
+     */
+
+    context.suite.only = function(title, fn){
+      var suite = context.suite(title, fn);
+      mocha.grep(suite.fullTitle());
+    };
+
+    /**
+     * Describe a specification or test-case
+     * with the given `title` and callback `fn`
+     * acting as a thunk.
+     */
+
+    context.test = function(title, fn){
+      var test = new Test(title, fn);
+      test.file = file;
+      suites[0].addTest(test);
+      return test;
+    };
+
+    /**
+     * Exclusive test-case.
+     */
+
+    context.test.only = function(title, fn){
+      var test = context.test(title, fn);
+      var reString = '^' + escapeRe(test.fullTitle()) + '$';
+      mocha.grep(new RegExp(reString));
+    };
+
+    /**
+     * Pending test case.
+     */
+
+    context.test.skip = function(title){
+      context.test(title);
+    };
+  });
+};
+
+}); // module: interfaces/qunit.js
+
 require.register("mocha.js", function(module, exports, require){
 /*!
  * mocha
@@ -1417,9 +1990,9 @@ require.register("mocha.js", function(module, exports, require){
  * Module dependencies.
  */
 
-var path = require('browser/path')
-  , escapeRe = require('browser/escape-string-regexp')
-  , utils = require('./utils');
+var escapeRe = require('browser/escape-string-regexp')
+  , utils = require('./utils')
+  , path;
 
 /**
  * Expose `Mocha`.
@@ -1432,9 +2005,11 @@ exports = module.exports = Mocha;
  */
 
 if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+  path = require('path');
   var join = path.join
     , cwd = process.cwd();
   module.paths.push(cwd, join(cwd, 'node_modules'));
+  exports.fsutils = require('./fsutils');
 }
 
 /**
@@ -1817,582 +2392,6 @@ Mocha.prototype.run = function(fn){
 
 }); // module: mocha.js
 
-require.register("ms.js", function(module, exports, require){
-/**
- * Helpers.
- */
-
-var s = 1000;
-var m = s * 60;
-var h = m * 60;
-var d = h * 24;
-var y = d * 365.25;
-
-/**
- * Parse or format the given `val`.
- *
- * Options:
- *
- *  - `long` verbose formatting [false]
- *
- * @param {String|Number} val
- * @param {Object} options
- * @return {String|Number}
- * @api public
- */
-
-module.exports = function(val, options){
-  options = options || {};
-  if ('string' == typeof val) return parse(val);
-  return options['long'] ? longFormat(val) : shortFormat(val);
-};
-
-/**
- * Parse the given `str` and return milliseconds.
- *
- * @param {String} str
- * @return {Number}
- * @api private
- */
-
-function parse(str) {
-  var match = /^((?:\d+)?\.?\d+) *(ms|seconds?|s|minutes?|m|hours?|h|days?|d|years?|y)?$/i.exec(str);
-  if (!match) return;
-  var n = parseFloat(match[1]);
-  var type = (match[2] || 'ms').toLowerCase();
-  switch (type) {
-    case 'years':
-    case 'year':
-    case 'y':
-      return n * y;
-    case 'days':
-    case 'day':
-    case 'd':
-      return n * d;
-    case 'hours':
-    case 'hour':
-    case 'h':
-      return n * h;
-    case 'minutes':
-    case 'minute':
-    case 'm':
-      return n * m;
-    case 'seconds':
-    case 'second':
-    case 's':
-      return n * s;
-    case 'ms':
-      return n;
-  }
-}
-
-/**
- * Short format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function shortFormat(ms) {
-  if (ms >= d) return Math.round(ms / d) + 'd';
-  if (ms >= h) return Math.round(ms / h) + 'h';
-  if (ms >= m) return Math.round(ms / m) + 'm';
-  if (ms >= s) return Math.round(ms / s) + 's';
-  return ms + 'ms';
-}
-
-/**
- * Long format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function longFormat(ms) {
-  return plural(ms, d, 'day')
-    || plural(ms, h, 'hour')
-    || plural(ms, m, 'minute')
-    || plural(ms, s, 'second')
-    || ms + ' ms';
-}
-
-/**
- * Pluralization helper.
- */
-
-function plural(ms, n, name) {
-  if (ms < n) return;
-  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
-  return Math.ceil(ms / n) + ' ' + name + 's';
-}
-
-}); // module: ms.js
-
-require.register("reporters/base.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var tty = require('browser/tty')
-  , diff = require('browser/diff')
-  , ms = require('../ms')
-  , utils = require('../utils');
-
-/**
- * Save timer references to avoid Sinon interfering (see GH-237).
- */
-
-var Date = global.Date
-  , setTimeout = global.setTimeout
-  , setInterval = global.setInterval
-  , clearTimeout = global.clearTimeout
-  , clearInterval = global.clearInterval;
-
-/**
- * Check if both stdio streams are associated with a tty.
- */
-
-var isatty = tty.isatty(1) && tty.isatty(2);
-
-/**
- * Expose `Base`.
- */
-
-exports = module.exports = Base;
-
-/**
- * Enable coloring by default.
- */
-
-exports.useColors = isatty || (process.env.MOCHA_COLORS !== undefined);
-
-/**
- * Inline diffs instead of +/-
- */
-
-exports.inlineDiffs = false;
-
-/**
- * Default color map.
- */
-
-exports.colors = {
-    'pass': 90
-  , 'fail': 31
-  , 'bright pass': 92
-  , 'bright fail': 91
-  , 'bright yellow': 93
-  , 'pending': 36
-  , 'suite': 0
-  , 'error title': 0
-  , 'error message': 31
-  , 'error stack': 90
-  , 'checkmark': 32
-  , 'fast': 90
-  , 'medium': 33
-  , 'slow': 31
-  , 'green': 32
-  , 'light': 90
-  , 'diff gutter': 90
-  , 'diff added': 42
-  , 'diff removed': 41
-};
-
-/**
- * Default symbol map.
- */
-
-exports.symbols = {
-  ok: '✓',
-  err: '✖',
-  dot: '․'
-};
-
-// With node.js on Windows: use symbols available in terminal default fonts
-if ('win32' == process.platform) {
-  exports.symbols.ok = '\u221A';
-  exports.symbols.err = '\u00D7';
-  exports.symbols.dot = '.';
-}
-
-/**
- * Color `str` with the given `type`,
- * allowing colors to be disabled,
- * as well as user-defined color
- * schemes.
- *
- * @param {String} type
- * @param {String} str
- * @return {String}
- * @api private
- */
-
-var color = exports.color = function(type, str) {
-  if (!exports.useColors) return str;
-  return '\u001b[' + exports.colors[type] + 'm' + str + '\u001b[0m';
-};
-
-/**
- * Expose term window size, with some
- * defaults for when stderr is not a tty.
- */
-
-exports.window = {
-  width: isatty
-    ? process.stdout.getWindowSize
-      ? process.stdout.getWindowSize(1)[0]
-      : tty.getWindowSize()[1]
-    : 75
-};
-
-/**
- * Expose some basic cursor interactions
- * that are common among reporters.
- */
-
-exports.cursor = {
-  hide: function(){
-    isatty && process.stdout.write('\u001b[?25l');
-  },
-
-  show: function(){
-    isatty && process.stdout.write('\u001b[?25h');
-  },
-
-  deleteLine: function(){
-    isatty && process.stdout.write('\u001b[2K');
-  },
-
-  beginningOfLine: function(){
-    isatty && process.stdout.write('\u001b[0G');
-  },
-
-  CR: function(){
-    if (isatty) {
-      exports.cursor.deleteLine();
-      exports.cursor.beginningOfLine();
-    } else {
-      process.stdout.write('\r');
-    }
-  }
-};
-
-/**
- * Outut the given `failures` as a list.
- *
- * @param {Array} failures
- * @api public
- */
-
-exports.list = function(failures){
-  console.error();
-  failures.forEach(function(test, i){
-    // format
-    var fmt = color('error title', '  %s) %s:\n')
-      + color('error message', '     %s')
-      + color('error stack', '\n%s\n');
-
-    // msg
-    var err = test.err
-      , message = err.message || ''
-      , stack = err.stack || message
-      , index = stack.indexOf(message) + message.length
-      , msg = stack.slice(0, index)
-      , actual = err.actual
-      , expected = err.expected
-      , escape = true;
-
-    // uncaught
-    if (err.uncaught) {
-      msg = 'Uncaught ' + msg;
-    }
-
-    // explicitly show diff
-    if (err.showDiff && sameType(actual, expected)) {
-      escape = false;
-      err.actual = actual = utils.stringify(actual);
-      err.expected = expected = utils.stringify(expected);
-    }
-
-    // actual / expected diff
-    if ('string' == typeof actual && 'string' == typeof expected) {
-      fmt = color('error title', '  %s) %s:\n%s') + color('error stack', '\n%s\n');
-      var match = message.match(/^([^:]+): expected/);
-      msg = '\n      ' + color('error message', match ? match[1] : msg);
-
-      if (exports.inlineDiffs) {
-        msg += inlineDiff(err, escape);
-      } else {
-        msg += unifiedDiff(err, escape);
-      }
-    }
-
-    // indent stack trace without msg
-    stack = stack.slice(index ? index + 1 : index)
-      .replace(/^/gm, '  ');
-
-    console.error(fmt, (i + 1), test.fullTitle(), msg, stack);
-  });
-};
-
-/**
- * Initialize a new `Base` reporter.
- *
- * All other reporters generally
- * inherit from this reporter, providing
- * stats such as test duration, number
- * of tests passed / failed etc.
- *
- * @param {Runner} runner
- * @api public
- */
-
-function Base(runner) {
-  var self = this
-    , stats = this.stats = { suites: 0, tests: 0, passes: 0, pending: 0, failures: 0 }
-    , failures = this.failures = [];
-
-  if (!runner) return;
-  this.runner = runner;
-
-  runner.stats = stats;
-
-  runner.on('start', function(){
-    stats.start = new Date;
-  });
-
-  runner.on('suite', function(suite){
-    stats.suites = stats.suites || 0;
-    suite.root || stats.suites++;
-  });
-
-  runner.on('test end', function(test){
-    stats.tests = stats.tests || 0;
-    stats.tests++;
-  });
-
-  runner.on('pass', function(test){
-    stats.passes = stats.passes || 0;
-
-    var medium = test.slow() / 2;
-    test.speed = test.duration > test.slow()
-      ? 'slow'
-      : test.duration > medium
-        ? 'medium'
-        : 'fast';
-
-    stats.passes++;
-  });
-
-  runner.on('fail', function(test, err){
-    stats.failures = stats.failures || 0;
-    stats.failures++;
-    test.err = err;
-    failures.push(test);
-  });
-
-  runner.on('end', function(){
-    stats.end = new Date;
-    stats.duration = new Date - stats.start;
-  });
-
-  runner.on('pending', function(){
-    stats.pending++;
-  });
-}
-
-/**
- * Output common epilogue used by many of
- * the bundled reporters.
- *
- * @api public
- */
-
-Base.prototype.epilogue = function(){
-  var stats = this.stats;
-  var tests;
-  var fmt;
-
-  console.log();
-
-  // passes
-  fmt = color('bright pass', ' ')
-    + color('green', ' %d passing')
-    + color('light', ' (%s)');
-
-  console.log(fmt,
-    stats.passes || 0,
-    ms(stats.duration));
-
-  // pending
-  if (stats.pending) {
-    fmt = color('pending', ' ')
-      + color('pending', ' %d pending');
-
-    console.log(fmt, stats.pending);
-  }
-
-  // failures
-  if (stats.failures) {
-    fmt = color('fail', '  %d failing');
-
-    console.error(fmt,
-      stats.failures);
-
-    Base.list(this.failures);
-    console.error();
-  }
-
-  console.log();
-};
-
-/**
- * Pad the given `str` to `len`.
- *
- * @param {String} str
- * @param {String} len
- * @return {String}
- * @api private
- */
-
-function pad(str, len) {
-  str = String(str);
-  return Array(len - str.length + 1).join(' ') + str;
-}
-
-
-/**
- * Returns an inline diff between 2 strings with coloured ANSI output
- *
- * @param {Error} Error with actual/expected
- * @return {String} Diff
- * @api private
- */
-
-function inlineDiff(err, escape) {
-  var msg = errorDiff(err, 'WordsWithSpace', escape);
-
-  // linenos
-  var lines = msg.split('\n');
-  if (lines.length > 4) {
-    var width = String(lines.length).length;
-    msg = lines.map(function(str, i){
-      return pad(++i, width) + ' |' + ' ' + str;
-    }).join('\n');
-  }
-
-  // legend
-  msg = '\n'
-    + color('diff removed', 'actual')
-    + ' '
-    + color('diff added', 'expected')
-    + '\n\n'
-    + msg
-    + '\n';
-
-  // indent
-  msg = msg.replace(/^/gm, '      ');
-  return msg;
-}
-
-/**
- * Returns a unified diff between 2 strings
- *
- * @param {Error} Error with actual/expected
- * @return {String} Diff
- * @api private
- */
-
-function unifiedDiff(err, escape) {
-  var indent = '      ';
-  function cleanUp(line) {
-    if (escape) {
-      line = escapeInvisibles(line);
-    }
-    if (line[0] === '+') return indent + colorLines('diff added', line);
-    if (line[0] === '-') return indent + colorLines('diff removed', line);
-    if (line.match(/\@\@/)) return null;
-    if (line.match(/\\ No newline/)) return null;
-    else return indent + line;
-  }
-  function notBlank(line) {
-    return line != null;
-  }
-  msg = diff.createPatch('string', err.actual, err.expected);
-  var lines = msg.split('\n').splice(4);
-  return '\n      '
-         + colorLines('diff added',   '+ expected') + ' '
-         + colorLines('diff removed', '- actual')
-         + '\n\n'
-         + lines.map(cleanUp).filter(notBlank).join('\n');
-}
-
-/**
- * Return a character diff for `err`.
- *
- * @param {Error} err
- * @return {String}
- * @api private
- */
-
-function errorDiff(err, type, escape) {
-  var actual   = escape ? escapeInvisibles(err.actual)   : err.actual;
-  var expected = escape ? escapeInvisibles(err.expected) : err.expected;
-  return diff['diff' + type](actual, expected).map(function(str){
-    if (str.added) return colorLines('diff added', str.value);
-    if (str.removed) return colorLines('diff removed', str.value);
-    return str.value;
-  }).join('');
-}
-
-/**
- * Returns a string with all invisible characters in plain text
- *
- * @param {String} line
- * @return {String}
- * @api private
- */
-function escapeInvisibles(line) {
-    return line.replace(/\t/g, '<tab>')
-               .replace(/\r/g, '<CR>')
-               .replace(/\n/g, '<LF>\n');
-}
-
-/**
- * Color lines for `str`, using the color `name`.
- *
- * @param {String} name
- * @param {String} str
- * @return {String}
- * @api private
- */
-
-function colorLines(name, str) {
-  return str.split('\n').map(function(str){
-    return color(name, str);
-  }).join('\n');
-}
-
-/**
- * Check that a / b have the same type.
- *
- * @param {Object} a
- * @param {Object} b
- * @return {Boolean}
- * @api private
- */
-
-function sameType(a, b) {
-  a = Object.prototype.toString.call(a);
-  b = Object.prototype.toString.call(b);
-  return a == b;
-}
-
-}); // module: reporters/base.js
-
 require.register("reporters/doc.js", function(module, exports, require){
 
 /**
@@ -2530,337 +2529,6 @@ Dot.prototype.constructor = Dot;
 
 
 }); // module: reporters/dot.js
-
-require.register("reporters/html-cov.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var JSONCov = require('./json-cov')
-  , fs = require('browser/fs');
-
-/**
- * Expose `HTMLCov`.
- */
-
-exports = module.exports = HTMLCov;
-
-/**
- * Initialize a new `JsCoverage` reporter.
- *
- * @param {Runner} runner
- * @api public
- */
-
-function HTMLCov(runner) {
-  var jade = require('jade')
-    , file = __dirname + '/templates/coverage.jade'
-    , str = fs.readFileSync(file, 'utf8')
-    , fn = jade.compile(str, { filename: file })
-    , self = this;
-
-  JSONCov.call(this, runner, false);
-
-  runner.on('end', function(){
-    process.stdout.write(fn({
-        cov: self.cov
-      , coverageClass: coverageClass
-    }));
-  });
-}
-
-/**
- * Return coverage class for `n`.
- *
- * @return {String}
- * @api private
- */
-
-function coverageClass(n) {
-  if (n >= 75) return 'high';
-  if (n >= 50) return 'medium';
-  if (n >= 25) return 'low';
-  return 'terrible';
-}
-}); // module: reporters/html-cov.js
-
-require.register("reporters/html.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Base = require('./base')
-  , utils = require('../utils')
-  , Progress = require('../browser/progress')
-  , escape = utils.escape;
-
-/**
- * Save timer references to avoid Sinon interfering (see GH-237).
- */
-
-var Date = global.Date
-  , setTimeout = global.setTimeout
-  , setInterval = global.setInterval
-  , clearTimeout = global.clearTimeout
-  , clearInterval = global.clearInterval;
-
-/**
- * Expose `HTML`.
- */
-
-exports = module.exports = HTML;
-
-/**
- * Stats template.
- */
-
-var statsTemplate = '<ul id="mocha-stats">'
-  + '<li class="progress"><canvas width="40" height="40"></canvas></li>'
-  + '<li class="passes"><a href="#">passes:</a> <em>0</em></li>'
-  + '<li class="failures"><a href="#">failures:</a> <em>0</em></li>'
-  + '<li class="duration">duration: <em>0</em>s</li>'
-  + '</ul>';
-
-/**
- * Initialize a new `HTML` reporter.
- *
- * @param {Runner} runner
- * @api public
- */
-
-function HTML(runner) {
-  Base.call(this, runner);
-
-  var self = this
-    , stats = this.stats
-    , total = runner.total
-    , stat = fragment(statsTemplate)
-    , items = stat.getElementsByTagName('li')
-    , passes = items[1].getElementsByTagName('em')[0]
-    , passesLink = items[1].getElementsByTagName('a')[0]
-    , failures = items[2].getElementsByTagName('em')[0]
-    , failuresLink = items[2].getElementsByTagName('a')[0]
-    , duration = items[3].getElementsByTagName('em')[0]
-    , canvas = stat.getElementsByTagName('canvas')[0]
-    , report = fragment('<ul id="mocha-report"></ul>')
-    , stack = [report]
-    , progress
-    , ctx
-    , root = document.getElementById('mocha');
-
-  if (canvas.getContext) {
-    var ratio = window.devicePixelRatio || 1;
-    canvas.style.width = canvas.width;
-    canvas.style.height = canvas.height;
-    canvas.width *= ratio;
-    canvas.height *= ratio;
-    ctx = canvas.getContext('2d');
-    ctx.scale(ratio, ratio);
-    progress = new Progress;
-  }
-
-  if (!root) return error('#mocha div missing, add it to your document');
-
-  // pass toggle
-  on(passesLink, 'click', function(){
-    unhide();
-    var name = /pass/.test(report.className) ? '' : ' pass';
-    report.className = report.className.replace(/fail|pass/g, '') + name;
-    if (report.className.trim()) hideSuitesWithout('test pass');
-  });
-
-  // failure toggle
-  on(failuresLink, 'click', function(){
-    unhide();
-    var name = /fail/.test(report.className) ? '' : ' fail';
-    report.className = report.className.replace(/fail|pass/g, '') + name;
-    if (report.className.trim()) hideSuitesWithout('test fail');
-  });
-
-  root.appendChild(stat);
-  root.appendChild(report);
-
-  if (progress) progress.size(40);
-
-  runner.on('suite', function(suite){
-    if (suite.root) return;
-
-    // suite
-    var url = self.suiteURL(suite);
-    var el = fragment('<li class="suite"><h1><a href="%s">%s</a></h1></li>', url, escape(suite.title));
-
-    // container
-    stack[0].appendChild(el);
-    stack.unshift(document.createElement('ul'));
-    el.appendChild(stack[0]);
-  });
-
-  runner.on('suite end', function(suite){
-    if (suite.root) return;
-    stack.shift();
-  });
-
-  runner.on('fail', function(test, err){
-    if ('hook' == test.type) runner.emit('test end', test);
-  });
-
-  runner.on('test end', function(test){
-    // TODO: add to stats
-    var percent = stats.tests / this.total * 100 | 0;
-    if (progress) progress.update(percent).draw(ctx);
-
-    // update stats
-    var ms = new Date - stats.start;
-    text(passes, stats.passes);
-    text(failures, stats.failures);
-    text(duration, (ms / 1000).toFixed(2));
-
-    // test
-    if ('passed' == test.state) {
-      var url = self.testURL(test);
-      var el = fragment('<li class="test pass %e"><h2>%e<span class="duration">%ems</span> <a href="%s" class="replay">‣</a></h2></li>', test.speed, test.title, test.duration, url);
-    } else if (test.pending) {
-      var el = fragment('<li class="test pass pending"><h2>%e</h2></li>', test.title);
-    } else {
-      var el = fragment('<li class="test fail"><h2>%e <a href="?grep=%e" class="replay">‣</a></h2></li>', test.title, encodeURIComponent(test.fullTitle()));
-      var str = test.err.stack || test.err.toString();
-
-      // FF / Opera do not add the message
-      if (!~str.indexOf(test.err.message)) {
-        str = test.err.message + '\n' + str;
-      }
-
-      // <=IE7 stringifies to [Object Error]. Since it can be overloaded, we
-      // check for the result of the stringifying.
-      if ('[object Error]' == str) str = test.err.message;
-
-      // Safari doesn't give you a stack. Let's at least provide a source line.
-      if (!test.err.stack && test.err.sourceURL && test.err.line !== undefined) {
-        str += "\n(" + test.err.sourceURL + ":" + test.err.line + ")";
-      }
-
-      el.appendChild(fragment('<pre class="error">%e</pre>', str));
-    }
-
-    // toggle code
-    // TODO: defer
-    if (!test.pending) {
-      var h2 = el.getElementsByTagName('h2')[0];
-
-      on(h2, 'click', function(){
-        pre.style.display = 'none' == pre.style.display
-          ? 'block'
-          : 'none';
-      });
-
-      var pre = fragment('<pre><code>%e</code></pre>', utils.clean(test.fn.toString()));
-      el.appendChild(pre);
-      pre.style.display = 'none';
-    }
-
-    // Don't call .appendChild if #mocha-report was already .shift()'ed off the stack.
-    if (stack[0]) stack[0].appendChild(el);
-  });
-}
-
-/**
- * Provide suite URL
- *
- * @param {Object} [suite]
- */
-
-HTML.prototype.suiteURL = function(suite){
-  return '?grep=' + encodeURIComponent(suite.fullTitle());
-};
-
-/**
- * Provide test URL
- *
- * @param {Object} [test]
- */
-
-HTML.prototype.testURL = function(test){
-  return '?grep=' + encodeURIComponent(test.fullTitle());
-};
-
-/**
- * Display error `msg`.
- */
-
-function error(msg) {
-  document.body.appendChild(fragment('<div id="mocha-error">%s</div>', msg));
-}
-
-/**
- * Return a DOM fragment from `html`.
- */
-
-function fragment(html) {
-  var args = arguments
-    , div = document.createElement('div')
-    , i = 1;
-
-  div.innerHTML = html.replace(/%([se])/g, function(_, type){
-    switch (type) {
-      case 's': return String(args[i++]);
-      case 'e': return escape(args[i++]);
-    }
-  });
-
-  return div.firstChild;
-}
-
-/**
- * Check for suites that do not have elements
- * with `classname`, and hide them.
- */
-
-function hideSuitesWithout(classname) {
-  var suites = document.getElementsByClassName('suite');
-  for (var i = 0; i < suites.length; i++) {
-    var els = suites[i].getElementsByClassName(classname);
-    if (0 == els.length) suites[i].className += ' hidden';
-  }
-}
-
-/**
- * Unhide .hidden suites.
- */
-
-function unhide() {
-  var els = document.getElementsByClassName('suite hidden');
-  for (var i = 0; i < els.length; ++i) {
-    els[i].className = els[i].className.replace('suite hidden', 'suite');
-  }
-}
-
-/**
- * Set `el` text to `str`.
- */
-
-function text(el, str) {
-  if (el.textContent) {
-    el.textContent = str;
-  } else {
-    el.innerText = str;
-  }
-}
-
-/**
- * Listen on `event` with callback `fn`.
- */
-
-function on(el, event, fn) {
-  if (el.addEventListener) {
-    el.addEventListener(event, fn, false);
-  } else {
-    el.attachEvent('on' + event, fn);
-  }
-}
-
-}); // module: reporters/html.js
 
 require.register("reporters/index.js", function(module, exports, require){
 
@@ -3300,6 +2968,285 @@ Landing.prototype.constructor = Landing;
 
 }); // module: reporters/landing.js
 
+require.register("reporters/html.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var Base = require('./base')
+  , utils = require('../utils')
+  , Progress = require('../browser/progress')
+  , escape = utils.escape
+  , clean = utils.clean;
+
+
+/**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
+
+/**
+ * Expose `HTML`.
+ */
+
+exports = module.exports = HTML;
+
+/**
+ * Stats template.
+ */
+
+var statsTemplate = '<ul id="mocha-stats">'
+  + '<li class="progress"><canvas width="40" height="40"></canvas></li>'
+  + '<li class="passes"><a href="#">passes:</a> <em>0</em></li>'
+  + '<li class="failures"><a href="#">failures:</a> <em>0</em></li>'
+  + '<li class="duration">duration: <em>0</em>s</li>'
+  + '</ul>';
+
+/**
+ * Initialize a new `HTML` reporter.
+ *
+ * @param {Runner} runner
+ * @api public
+ */
+
+function HTML(runner) {
+  Base.call(this, runner);
+
+  var self = this
+    , stats = this.stats
+    , total = runner.total
+    , stat = fragment(statsTemplate)
+    , items = stat.getElementsByTagName('li')
+    , passes = items[1].getElementsByTagName('em')[0]
+    , passesLink = items[1].getElementsByTagName('a')[0]
+    , failures = items[2].getElementsByTagName('em')[0]
+    , failuresLink = items[2].getElementsByTagName('a')[0]
+    , duration = items[3].getElementsByTagName('em')[0]
+    , canvas = stat.getElementsByTagName('canvas')[0]
+    , report = fragment('<ul id="mocha-report"></ul>')
+    , stack = [report]
+    , progress
+    , ctx
+    , root = document.getElementById('mocha');
+
+  if (canvas.getContext) {
+    var ratio = window.devicePixelRatio || 1;
+    canvas.style.width = canvas.width;
+    canvas.style.height = canvas.height;
+    canvas.width *= ratio;
+    canvas.height *= ratio;
+    ctx = canvas.getContext('2d');
+    ctx.scale(ratio, ratio);
+    progress = new Progress;
+  }
+
+  if (!root) return error('#mocha div missing, add it to your document');
+
+  // pass toggle
+  on(passesLink, 'click', function(){
+    unhide();
+    var name = /pass/.test(report.className) ? '' : ' pass';
+    report.className = report.className.replace(/fail|pass/g, '') + name;
+    if (report.className.trim()) hideSuitesWithout('test pass');
+  });
+
+  // failure toggle
+  on(failuresLink, 'click', function(){
+    unhide();
+    var name = /fail/.test(report.className) ? '' : ' fail';
+    report.className = report.className.replace(/fail|pass/g, '') + name;
+    if (report.className.trim()) hideSuitesWithout('test fail');
+  });
+
+  root.appendChild(stat);
+  root.appendChild(report);
+
+  if (progress) progress.size(40);
+
+  runner.on('suite', function(suite){
+    if (suite.root) return;
+
+    // suite
+    var url = self.suiteURL(suite);
+    var el = fragment('<li class="suite"><h1><a href="%s">%s</a></h1></li>', url, escape(suite.title));
+
+    // container
+    stack[0].appendChild(el);
+    stack.unshift(document.createElement('ul'));
+    el.appendChild(stack[0]);
+  });
+
+  runner.on('suite end', function(suite){
+    if (suite.root) return;
+    stack.shift();
+  });
+
+  runner.on('fail', function(test, err){
+    if ('hook' == test.type) runner.emit('test end', test);
+  });
+
+  runner.on('test end', function(test){
+    // TODO: add to stats
+    var percent = stats.tests / this.total * 100 | 0;
+    if (progress) progress.update(percent).draw(ctx);
+
+    // update stats
+    var ms = new Date - stats.start;
+    text(passes, stats.passes);
+    text(failures, stats.failures);
+    text(duration, (ms / 1000).toFixed(2));
+
+    // test
+    if ('passed' == test.state) {
+      var url = self.testURL(test);
+      var el = fragment('<li class="test pass %e"><h2>%e<span class="duration">%ems</span> <a href="%s" class="replay">‣</a></h2></li>', test.speed, test.title, test.duration, url);
+    } else if (test.pending) {
+      var el = fragment('<li class="test pass pending"><h2>%e</h2></li>', test.title);
+    } else {
+      var el = fragment('<li class="test fail"><h2>%e <a href="?grep=%e" class="replay">‣</a></h2></li>', test.title, encodeURIComponent(test.fullTitle()));
+      var str = test.err.stack || test.err.toString();
+
+      // FF / Opera do not add the message
+      if (!~str.indexOf(test.err.message)) {
+        str = test.err.message + '\n' + str;
+      }
+
+      // <=IE7 stringifies to [Object Error]. Since it can be overloaded, we
+      // check for the result of the stringifying.
+      if ('[object Error]' == str) str = test.err.message;
+
+      // Safari doesn't give you a stack. Let's at least provide a source line.
+      if (!test.err.stack && test.err.sourceURL && test.err.line !== undefined) {
+        str += "\n(" + test.err.sourceURL + ":" + test.err.line + ")";
+      }
+
+      el.appendChild(fragment('<pre class="error">%e</pre>', str));
+    }
+
+    // toggle code
+    // TODO: defer
+    if (!test.pending) {
+      var h2 = el.getElementsByTagName('h2')[0];
+
+      on(h2, 'click', function(){
+        pre.style.display = 'none' == pre.style.display
+          ? 'block'
+          : 'none';
+      });
+
+      var pre = fragment('<pre><code>%e</code></pre>', clean(test.fn.toString()));
+      el.appendChild(pre);
+      pre.style.display = 'none';
+    }
+
+    // Don't call .appendChild if #mocha-report was already .shift()'ed off the stack.
+    if (stack[0]) stack[0].appendChild(el);
+  });
+}
+
+/**
+ * Provide suite URL
+ *
+ * @param {Object} [suite]
+ */
+
+HTML.prototype.suiteURL = function(suite){
+  return '?grep=' + encodeURIComponent(suite.fullTitle());
+};
+
+/**
+ * Provide test URL
+ *
+ * @param {Object} [test]
+ */
+
+HTML.prototype.testURL = function(test){
+  return '?grep=' + encodeURIComponent(test.fullTitle());
+};
+
+/**
+ * Display error `msg`.
+ */
+
+function error(msg) {
+  document.body.appendChild(fragment('<div id="mocha-error">%s</div>', msg));
+}
+
+/**
+ * Return a DOM fragment from `html`.
+ */
+
+function fragment(html) {
+  var args = arguments
+    , div = document.createElement('div')
+    , i = 1;
+
+  div.innerHTML = html.replace(/%([se])/g, function(_, type){
+    switch (type) {
+      case 's': return String(args[i++]);
+      case 'e': return escape(args[i++]);
+    }
+  });
+
+  return div.firstChild;
+}
+
+/**
+ * Check for suites that do not have elements
+ * with `classname`, and hide them.
+ */
+
+function hideSuitesWithout(classname) {
+  var suites = document.getElementsByClassName('suite');
+  for (var i = 0; i < suites.length; i++) {
+    var els = suites[i].getElementsByClassName(classname);
+    if (0 == els.length) suites[i].className += ' hidden';
+  }
+}
+
+/**
+ * Unhide .hidden suites.
+ */
+
+function unhide() {
+  var els = document.getElementsByClassName('suite hidden');
+  for (var i = 0; i < els.length; ++i) {
+    els[i].className = els[i].className.replace('suite hidden', 'suite');
+  }
+}
+
+/**
+ * Set `el` text to `str`.
+ */
+
+function text(el, str) {
+  if (el.textContent) {
+    el.textContent = str;
+  } else {
+    el.innerText = str;
+  }
+}
+
+/**
+ * Listen on `event` with callback `fn`.
+ */
+
+function on(el, event, fn) {
+  if (el.addEventListener) {
+    el.addEventListener(event, fn, false);
+  } else {
+    el.attachEvent('on' + event, fn);
+  }
+}
+
+}); // module: reporters/html.js
+
 require.register("reporters/list.js", function(module, exports, require){
 
 /**
@@ -3511,274 +3458,6 @@ Min.prototype.constructor = Min;
 
 
 }); // module: reporters/min.js
-
-require.register("reporters/nyan.js", function(module, exports, require){
-/**
- * Module dependencies.
- */
-
-var Base = require('./base')
-  , color = Base.color;
-
-/**
- * Expose `Dot`.
- */
-
-exports = module.exports = NyanCat;
-
-/**
- * Initialize a new `Dot` matrix test reporter.
- *
- * @param {Runner} runner
- * @api public
- */
-
-function NyanCat(runner) {
-  Base.call(this, runner);
-  var self = this
-    , stats = this.stats
-    , width = Base.window.width * .75 | 0
-    , rainbowColors = this.rainbowColors = self.generateColors()
-    , colorIndex = this.colorIndex = 0
-    , numerOfLines = this.numberOfLines = 4
-    , trajectories = this.trajectories = [[], [], [], []]
-    , nyanCatWidth = this.nyanCatWidth = 11
-    , trajectoryWidthMax = this.trajectoryWidthMax = (width - nyanCatWidth)
-    , scoreboardWidth = this.scoreboardWidth = 5
-    , tick = this.tick = 0
-    , n = 0;
-
-  runner.on('start', function(){
-    Base.cursor.hide();
-    self.draw();
-  });
-
-  runner.on('pending', function(test){
-    self.draw();
-  });
-
-  runner.on('pass', function(test){
-    self.draw();
-  });
-
-  runner.on('fail', function(test, err){
-    self.draw();
-  });
-
-  runner.on('end', function(){
-    Base.cursor.show();
-    for (var i = 0; i < self.numberOfLines; i++) write('\n');
-    self.epilogue();
-  });
-}
-
-/**
- * Draw the nyan cat
- *
- * @api private
- */
-
-NyanCat.prototype.draw = function(){
-  this.appendRainbow();
-  this.drawScoreboard();
-  this.drawRainbow();
-  this.drawNyanCat();
-  this.tick = !this.tick;
-};
-
-/**
- * Draw the "scoreboard" showing the number
- * of passes, failures and pending tests.
- *
- * @api private
- */
-
-NyanCat.prototype.drawScoreboard = function(){
-  var stats = this.stats;
-  var colors = Base.colors;
-
-  function draw(color, n) {
-    write(' ');
-    write('\u001b[' + color + 'm' + n + '\u001b[0m');
-    write('\n');
-  }
-
-  draw(colors.green, stats.passes);
-  draw(colors.fail, stats.failures);
-  draw(colors.pending, stats.pending);
-  write('\n');
-
-  this.cursorUp(this.numberOfLines);
-};
-
-/**
- * Append the rainbow.
- *
- * @api private
- */
-
-NyanCat.prototype.appendRainbow = function(){
-  var segment = this.tick ? '_' : '-';
-  var rainbowified = this.rainbowify(segment);
-
-  for (var index = 0; index < this.numberOfLines; index++) {
-    var trajectory = this.trajectories[index];
-    if (trajectory.length >= this.trajectoryWidthMax) trajectory.shift();
-    trajectory.push(rainbowified);
-  }
-};
-
-/**
- * Draw the rainbow.
- *
- * @api private
- */
-
-NyanCat.prototype.drawRainbow = function(){
-  var self = this;
-
-  this.trajectories.forEach(function(line, index) {
-    write('\u001b[' + self.scoreboardWidth + 'C');
-    write(line.join(''));
-    write('\n');
-  });
-
-  this.cursorUp(this.numberOfLines);
-};
-
-/**
- * Draw the nyan cat
- *
- * @api private
- */
-
-NyanCat.prototype.drawNyanCat = function() {
-  var self = this;
-  var startWidth = this.scoreboardWidth + this.trajectories[0].length;
-  var color = '\u001b[' + startWidth + 'C';
-  var padding = '';
-
-  write(color);
-  write('_,------,');
-  write('\n');
-
-  write(color);
-  padding = self.tick ? '  ' : '   ';
-  write('_|' + padding + '/\\_/\\ ');
-  write('\n');
-
-  write(color);
-  padding = self.tick ? '_' : '__';
-  var tail = self.tick ? '~' : '^';
-  var face;
-  write(tail + '|' + padding + this.face() + ' ');
-  write('\n');
-
-  write(color);
-  padding = self.tick ? ' ' : '  ';
-  write(padding + '""  "" ');
-  write('\n');
-
-  this.cursorUp(this.numberOfLines);
-};
-
-/**
- * Draw nyan cat face.
- *
- * @return {String}
- * @api private
- */
-
-NyanCat.prototype.face = function() {
-  var stats = this.stats;
-  if (stats.failures) {
-    return '( x .x)';
-  } else if (stats.pending) {
-    return '( o .o)';
-  } else if(stats.passes) {
-    return '( ^ .^)';
-  } else {
-    return '( - .-)';
-  }
-}
-
-/**
- * Move cursor up `n`.
- *
- * @param {Number} n
- * @api private
- */
-
-NyanCat.prototype.cursorUp = function(n) {
-  write('\u001b[' + n + 'A');
-};
-
-/**
- * Move cursor down `n`.
- *
- * @param {Number} n
- * @api private
- */
-
-NyanCat.prototype.cursorDown = function(n) {
-  write('\u001b[' + n + 'B');
-};
-
-/**
- * Generate rainbow colors.
- *
- * @return {Array}
- * @api private
- */
-
-NyanCat.prototype.generateColors = function(){
-  var colors = [];
-
-  for (var i = 0; i < (6 * 7); i++) {
-    var pi3 = Math.floor(Math.PI / 3);
-    var n = (i * (1.0 / 6));
-    var r = Math.floor(3 * Math.sin(n) + 3);
-    var g = Math.floor(3 * Math.sin(n + 2 * pi3) + 3);
-    var b = Math.floor(3 * Math.sin(n + 4 * pi3) + 3);
-    colors.push(36 * r + 6 * g + b + 16);
-  }
-
-  return colors;
-};
-
-/**
- * Apply rainbow to the given `str`.
- *
- * @param {String} str
- * @return {String}
- * @api private
- */
-
-NyanCat.prototype.rainbowify = function(str){
-  var color = this.rainbowColors[this.colorIndex % this.rainbowColors.length];
-  this.colorIndex += 1;
-  return '\u001b[38;5;' + color + 'm' + str + '\u001b[0m';
-};
-
-/**
- * Stdout helper.
- */
-
-function write(string) {
-  process.stdout.write(string);
-}
-
-/**
- * Inherit from `Base.prototype`.
- */
-
-function F(){};
-F.prototype = Base.prototype;
-NyanCat.prototype = new F;
-NyanCat.prototype.constructor = NyanCat;
-
-
-}); // module: reporters/nyan.js
 
 require.register("reporters/progress.js", function(module, exports, require){
 /**
@@ -4047,132 +3726,6 @@ function title(test) {
 }
 
 }); // module: reporters/tap.js
-
-require.register("reporters/xunit.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Base = require('./base')
-  , utils = require('../utils')
-  , escape = utils.escape;
-
-/**
- * Save timer references to avoid Sinon interfering (see GH-237).
- */
-
-var Date = global.Date
-  , setTimeout = global.setTimeout
-  , setInterval = global.setInterval
-  , clearTimeout = global.clearTimeout
-  , clearInterval = global.clearInterval;
-
-/**
- * Expose `XUnit`.
- */
-
-exports = module.exports = XUnit;
-
-/**
- * Initialize a new `XUnit` reporter.
- *
- * @param {Runner} runner
- * @api public
- */
-
-function XUnit(runner) {
-  Base.call(this, runner);
-  var stats = this.stats
-    , tests = []
-    , self = this;
-
-  runner.on('pending', function(test){
-    tests.push(test);
-  });
-
-  runner.on('pass', function(test){
-    tests.push(test);
-  });
-
-  runner.on('fail', function(test){
-    tests.push(test);
-  });
-
-  runner.on('end', function(){
-    console.log(tag('testsuite', {
-        name: 'Mocha Tests'
-      , tests: stats.tests
-      , failures: stats.failures
-      , errors: stats.failures
-      , skipped: stats.tests - stats.failures - stats.passes
-      , timestamp: (new Date).toUTCString()
-      , time: (stats.duration / 1000) || 0
-    }, false));
-
-    tests.forEach(test);
-    console.log('</testsuite>');
-  });
-}
-
-/**
- * Inherit from `Base.prototype`.
- */
-
-function F(){};
-F.prototype = Base.prototype;
-XUnit.prototype = new F;
-XUnit.prototype.constructor = XUnit;
-
-
-/**
- * Output tag for the given `test.`
- */
-
-function test(test) {
-  var attrs = {
-      classname: test.parent.fullTitle()
-    , name: test.title
-    , time: (test.duration / 1000) || 0
-  };
-
-  if ('failed' == test.state) {
-    var err = test.err;
-    console.log(tag('testcase', attrs, false, tag('failure', {}, false, cdata(escape(err.message) + "\n" + err.stack))));
-  } else if (test.pending) {
-    console.log(tag('testcase', attrs, false, tag('skipped', {}, true)));
-  } else {
-    console.log(tag('testcase', attrs, true) );
-  }
-}
-
-/**
- * HTML tag helper.
- */
-
-function tag(name, attrs, close, content) {
-  var end = close ? '/>' : '>'
-    , pairs = []
-    , tag;
-
-  for (var key in attrs) {
-    pairs.push(key + '="' + escape(attrs[key]) + '"');
-  }
-
-  tag = '<' + name + (pairs.length ? ' ' + pairs.join(' ') : '') + end;
-  if (content) tag += content + '</' + name + end;
-  return tag;
-}
-
-/**
- * Return cdata escaped CDATA `str`.
- */
-
-function cdata(str) {
-  return '<![CDATA[' + escape(str) + ']]>';
-}
-
-}); // module: reporters/xunit.js
 
 require.register("runnable.js", function(module, exports, require){
 
@@ -4446,6 +3999,360 @@ Runnable.prototype.run = function(fn){
 
 }); // module: runnable.js
 
+require.register("suite.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var EventEmitter = require('browser/events').EventEmitter
+  , debug = require('browser/debug')('mocha:suite')
+  , milliseconds = require('./ms')
+  , utils = require('./utils')
+  , Hook = require('./hook');
+
+/**
+ * Expose `Suite`.
+ */
+
+exports = module.exports = Suite;
+
+/**
+ * Create a new `Suite` with the given `title`
+ * and parent `Suite`. When a suite with the
+ * same title is already present, that suite
+ * is returned to provide nicer reporter
+ * and more flexible meta-testing.
+ *
+ * @param {Suite} parent
+ * @param {String} title
+ * @return {Suite}
+ * @api public
+ */
+
+exports.create = function(parent, title){
+  var suite = new Suite(title, parent.ctx);
+  suite.parent = parent;
+  if (parent.pending) suite.pending = true;
+  title = suite.fullTitle();
+  parent.addSuite(suite);
+  return suite;
+};
+
+/**
+ * Initialize a new `Suite` with the given
+ * `title` and `ctx`.
+ *
+ * @param {String} title
+ * @param {Context} ctx
+ * @api private
+ */
+
+function Suite(title, parentContext) {
+  this.title = title;
+  var context = function() {};
+  context.prototype = parentContext;
+  this.ctx = new context();
+  this.suites = [];
+  this.tests = [];
+  this.pending = false;
+  this._beforeEach = [];
+  this._beforeAll = [];
+  this._afterEach = [];
+  this._afterAll = [];
+  this.root = !title;
+  this._timeout = 2000;
+  this._enableTimeouts = true;
+  this._slow = 75;
+  this._bail = false;
+}
+
+/**
+ * Inherit from `EventEmitter.prototype`.
+ */
+
+function F(){};
+F.prototype = EventEmitter.prototype;
+Suite.prototype = new F;
+Suite.prototype.constructor = Suite;
+
+
+/**
+ * Return a clone of this `Suite`.
+ *
+ * @return {Suite}
+ * @api private
+ */
+
+Suite.prototype.clone = function(){
+  var suite = new Suite(this.title);
+  debug('clone');
+  suite.ctx = this.ctx;
+  suite.timeout(this.timeout());
+  suite.enableTimeouts(this.enableTimeouts());
+  suite.slow(this.slow());
+  suite.bail(this.bail());
+  return suite;
+};
+
+/**
+ * Set timeout `ms` or short-hand such as "2s".
+ *
+ * @param {Number|String} ms
+ * @return {Suite|Number} for chaining
+ * @api private
+ */
+
+Suite.prototype.timeout = function(ms){
+  if (0 == arguments.length) return this._timeout;
+  if (ms === 0) this._enableTimeouts = false;
+  if ('string' == typeof ms) ms = milliseconds(ms);
+  debug('timeout %d', ms);
+  this._timeout = parseInt(ms, 10);
+  return this;
+};
+
+/**
+  * Set timeout `enabled`.
+  *
+  * @param {Boolean} enabled
+  * @return {Suite|Boolean} self or enabled
+  * @api private
+  */
+
+Suite.prototype.enableTimeouts = function(enabled){
+  if (arguments.length === 0) return this._enableTimeouts;
+  debug('enableTimeouts %s', enabled);
+  this._enableTimeouts = enabled;
+  return this;
+}
+
+/**
+ * Set slow `ms` or short-hand such as "2s".
+ *
+ * @param {Number|String} ms
+ * @return {Suite|Number} for chaining
+ * @api private
+ */
+
+Suite.prototype.slow = function(ms){
+  if (0 === arguments.length) return this._slow;
+  if ('string' == typeof ms) ms = milliseconds(ms);
+  debug('slow %d', ms);
+  this._slow = ms;
+  return this;
+};
+
+/**
+ * Sets whether to bail after first error.
+ *
+ * @parma {Boolean} bail
+ * @return {Suite|Number} for chaining
+ * @api private
+ */
+
+Suite.prototype.bail = function(bail){
+  if (0 == arguments.length) return this._bail;
+  debug('bail %s', bail);
+  this._bail = bail;
+  return this;
+};
+
+/**
+ * Run `fn(test[, done])` before running tests.
+ *
+ * @param {Function} fn
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.beforeAll = function(title, fn){
+  if (this.pending) return this;
+  if ('function' === typeof title) {
+    fn = title;
+    title = fn.name;
+  }
+  title = '"before all" hook' + (title ? ': ' + title : '');
+
+  var hook = new Hook(title, fn);
+  hook.parent = this;
+  hook.timeout(this.timeout());
+  hook.enableTimeouts(this.enableTimeouts());
+  hook.slow(this.slow());
+  hook.ctx = this.ctx;
+  this._beforeAll.push(hook);
+  this.emit('beforeAll', hook);
+  return this;
+};
+
+/**
+ * Run `fn(test[, done])` after running tests.
+ *
+ * @param {Function} fn
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.afterAll = function(title, fn){
+  if (this.pending) return this;
+  if ('function' === typeof title) {
+    fn = title;
+    title = fn.name;
+  }
+  title = '"after all" hook' + (title ? ': ' + title : '');
+
+  var hook = new Hook(title, fn);
+  hook.parent = this;
+  hook.timeout(this.timeout());
+  hook.enableTimeouts(this.enableTimeouts());
+  hook.slow(this.slow());
+  hook.ctx = this.ctx;
+  this._afterAll.push(hook);
+  this.emit('afterAll', hook);
+  return this;
+};
+
+/**
+ * Run `fn(test[, done])` before each test case.
+ *
+ * @param {Function} fn
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.beforeEach = function(title, fn){
+  if (this.pending) return this;
+  if ('function' === typeof title) {
+    fn = title;
+    title = fn.name;
+  }
+  title = '"before each" hook' + (title ? ': ' + title : '');
+
+  var hook = new Hook(title, fn);
+  hook.parent = this;
+  hook.timeout(this.timeout());
+  hook.enableTimeouts(this.enableTimeouts());
+  hook.slow(this.slow());
+  hook.ctx = this.ctx;
+  this._beforeEach.push(hook);
+  this.emit('beforeEach', hook);
+  return this;
+};
+
+/**
+ * Run `fn(test[, done])` after each test case.
+ *
+ * @param {Function} fn
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.afterEach = function(title, fn){
+  if (this.pending) return this;
+  if ('function' === typeof title) {
+    fn = title;
+    title = fn.name;
+  }
+  title = '"after each" hook' + (title ? ': ' + title : '');
+
+  var hook = new Hook(title, fn);
+  hook.parent = this;
+  hook.timeout(this.timeout());
+  hook.enableTimeouts(this.enableTimeouts());
+  hook.slow(this.slow());
+  hook.ctx = this.ctx;
+  this._afterEach.push(hook);
+  this.emit('afterEach', hook);
+  return this;
+};
+
+/**
+ * Add a test `suite`.
+ *
+ * @param {Suite} suite
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.addSuite = function(suite){
+  suite.parent = this;
+  suite.timeout(this.timeout());
+  suite.enableTimeouts(this.enableTimeouts());
+  suite.slow(this.slow());
+  suite.bail(this.bail());
+  this.suites.push(suite);
+  this.emit('suite', suite);
+  return this;
+};
+
+/**
+ * Add a `test` to this suite.
+ *
+ * @param {Test} test
+ * @return {Suite} for chaining
+ * @api private
+ */
+
+Suite.prototype.addTest = function(test){
+  test.parent = this;
+  test.timeout(this.timeout());
+  test.enableTimeouts(this.enableTimeouts());
+  test.slow(this.slow());
+  test.ctx = this.ctx;
+  this.tests.push(test);
+  this.emit('test', test);
+  return this;
+};
+
+/**
+ * Return the full title generated by recursively
+ * concatenating the parent's full title.
+ *
+ * @return {String}
+ * @api public
+ */
+
+Suite.prototype.fullTitle = function(){
+  if (this.parent) {
+    var full = this.parent.fullTitle();
+    if (full) return full + ' ' + this.title;
+  }
+  return this.title;
+};
+
+/**
+ * Return the total number of tests.
+ *
+ * @return {Number}
+ * @api public
+ */
+
+Suite.prototype.total = function(){
+  return utils.reduce(this.suites, function(sum, suite){
+    return sum + suite.total();
+  }, 0) + this.tests.length;
+};
+
+/**
+ * Iterates through each suite recursively to find
+ * all tests. Applies a function in the format
+ * `fn(test)`.
+ *
+ * @param {Function} fn
+ * @return {Suite}
+ * @api private
+ */
+
+Suite.prototype.eachTest = function(fn){
+  utils.forEach(this.tests, fn);
+  utils.forEach(this.suites, function(suite){
+    suite.eachTest(fn);
+  });
+  return this;
+};
+
+}); // module: suite.js
+
 require.register("runner.js", function(module, exports, require){
 /**
  * Module dependencies.
@@ -4456,6 +4363,7 @@ var EventEmitter = require('browser/events').EventEmitter
   , Test = require('./test')
   , utils = require('./utils')
   , filter = utils.filter
+  , indexOf = utils.indexOf
   , keys = utils.keys;
 
 /**
@@ -4577,11 +4485,11 @@ Runner.prototype.grepTotal = function(suite) {
  */
 
 Runner.prototype.globalProps = function() {
-  var props = utils.keys(global);
+  var props = keys(global);
 
   // non-enumerables
   for (var i = 0; i < globals.length; ++i) {
-    if (~utils.indexOf(props, globals[i])) continue;
+    if (~indexOf(props, globals[i])) continue;
     props.push(globals[i]);
   }
 
@@ -5122,419 +5030,400 @@ function filterLeaks(ok, globals) {
 
 }); // module: runner.js
 
-require.register("suite.js", function(module, exports, require){
-
+require.register("reporters/nyan.js", function(module, exports, require){
 /**
  * Module dependencies.
  */
 
-var EventEmitter = require('browser/events').EventEmitter
-  , debug = require('browser/debug')('mocha:suite')
-  , milliseconds = require('./ms')
-  , utils = require('./utils')
-  , Hook = require('./hook');
+var Base = require('./base')
+  , color = Base.color;
 
 /**
- * Expose `Suite`.
+ * Expose `Dot`.
  */
 
-exports = module.exports = Suite;
+exports = module.exports = NyanCat;
 
 /**
- * Create a new `Suite` with the given `title`
- * and parent `Suite`. When a suite with the
- * same title is already present, that suite
- * is returned to provide nicer reporter
- * and more flexible meta-testing.
+ * Initialize a new `Dot` matrix test reporter.
  *
- * @param {Suite} parent
- * @param {String} title
- * @return {Suite}
+ * @param {Runner} runner
  * @api public
  */
 
-exports.create = function(parent, title){
-  var suite = new Suite(title, parent.ctx);
-  suite.parent = parent;
-  if (parent.pending) suite.pending = true;
-  title = suite.fullTitle();
-  parent.addSuite(suite);
-  return suite;
-};
+function NyanCat(runner) {
+  Base.call(this, runner);
+  var self = this
+    , stats = this.stats
+    , width = Base.window.width * .75 | 0
+    , rainbowColors = this.rainbowColors = self.generateColors()
+    , colorIndex = this.colorIndex = 0
+    , numerOfLines = this.numberOfLines = 4
+    , trajectories = this.trajectories = [[], [], [], []]
+    , nyanCatWidth = this.nyanCatWidth = 11
+    , trajectoryWidthMax = this.trajectoryWidthMax = (width - nyanCatWidth)
+    , scoreboardWidth = this.scoreboardWidth = 5
+    , tick = this.tick = 0
+    , n = 0;
 
-/**
- * Initialize a new `Suite` with the given
- * `title` and `ctx`.
- *
- * @param {String} title
- * @param {Context} ctx
- * @api private
- */
+  runner.on('start', function(){
+    Base.cursor.hide();
+    self.draw();
+  });
 
-function Suite(title, parentContext) {
-  this.title = title;
-  var context = function() {};
-  context.prototype = parentContext;
-  this.ctx = new context();
-  this.suites = [];
-  this.tests = [];
-  this.pending = false;
-  this._beforeEach = [];
-  this._beforeAll = [];
-  this._afterEach = [];
-  this._afterAll = [];
-  this.root = !title;
-  this._timeout = 2000;
-  this._enableTimeouts = true;
-  this._slow = 75;
-  this._bail = false;
+  runner.on('pending', function(test){
+    self.draw();
+  });
+
+  runner.on('pass', function(test){
+    self.draw();
+  });
+
+  runner.on('fail', function(test, err){
+    self.draw();
+  });
+
+  runner.on('end', function(){
+    Base.cursor.show();
+    for (var i = 0; i < self.numberOfLines; i++) write('\n');
+    self.epilogue();
+  });
 }
 
 /**
- * Inherit from `EventEmitter.prototype`.
- */
-
-function F(){};
-F.prototype = EventEmitter.prototype;
-Suite.prototype = new F;
-Suite.prototype.constructor = Suite;
-
-
-/**
- * Return a clone of this `Suite`.
+ * Draw the nyan cat
  *
- * @return {Suite}
  * @api private
  */
 
-Suite.prototype.clone = function(){
-  var suite = new Suite(this.title);
-  debug('clone');
-  suite.ctx = this.ctx;
-  suite.timeout(this.timeout());
-  suite.enableTimeouts(this.enableTimeouts());
-  suite.slow(this.slow());
-  suite.bail(this.bail());
-  return suite;
+NyanCat.prototype.draw = function(){
+  this.appendRainbow();
+  this.drawScoreboard();
+  this.drawRainbow();
+  this.drawNyanCat();
+  this.tick = !this.tick;
 };
 
 /**
- * Set timeout `ms` or short-hand such as "2s".
+ * Draw the "scoreboard" showing the number
+ * of passes, failures and pending tests.
  *
- * @param {Number|String} ms
- * @return {Suite|Number} for chaining
  * @api private
  */
 
-Suite.prototype.timeout = function(ms){
-  if (0 == arguments.length) return this._timeout;
-  if (ms === 0) this._enableTimeouts = false;
-  if ('string' == typeof ms) ms = milliseconds(ms);
-  debug('timeout %d', ms);
-  this._timeout = parseInt(ms, 10);
-  return this;
-};
+NyanCat.prototype.drawScoreboard = function(){
+  var stats = this.stats;
+  var colors = Base.colors;
 
-/**
-  * Set timeout `enabled`.
-  *
-  * @param {Boolean} enabled
-  * @return {Suite|Boolean} self or enabled
-  * @api private
-  */
-
-Suite.prototype.enableTimeouts = function(enabled){
-  if (arguments.length === 0) return this._enableTimeouts;
-  debug('enableTimeouts %s', enabled);
-  this._enableTimeouts = enabled;
-  return this;
-}
-
-/**
- * Set slow `ms` or short-hand such as "2s".
- *
- * @param {Number|String} ms
- * @return {Suite|Number} for chaining
- * @api private
- */
-
-Suite.prototype.slow = function(ms){
-  if (0 === arguments.length) return this._slow;
-  if ('string' == typeof ms) ms = milliseconds(ms);
-  debug('slow %d', ms);
-  this._slow = ms;
-  return this;
-};
-
-/**
- * Sets whether to bail after first error.
- *
- * @parma {Boolean} bail
- * @return {Suite|Number} for chaining
- * @api private
- */
-
-Suite.prototype.bail = function(bail){
-  if (0 == arguments.length) return this._bail;
-  debug('bail %s', bail);
-  this._bail = bail;
-  return this;
-};
-
-/**
- * Run `fn(test[, done])` before running tests.
- *
- * @param {Function} fn
- * @return {Suite} for chaining
- * @api private
- */
-
-Suite.prototype.beforeAll = function(title, fn){
-  if (this.pending) return this;
-  if ('function' === typeof title) {
-    fn = title;
-    title = fn.name;
+  function draw(color, n) {
+    write(' ');
+    write('\u001b[' + color + 'm' + n + '\u001b[0m');
+    write('\n');
   }
-  title = '"before all" hook' + (title ? ': ' + title : '');
 
-  var hook = new Hook(title, fn);
-  hook.parent = this;
-  hook.timeout(this.timeout());
-  hook.enableTimeouts(this.enableTimeouts());
-  hook.slow(this.slow());
-  hook.ctx = this.ctx;
-  this._beforeAll.push(hook);
-  this.emit('beforeAll', hook);
-  return this;
+  draw(colors.green, stats.passes);
+  draw(colors.fail, stats.failures);
+  draw(colors.pending, stats.pending);
+  write('\n');
+
+  this.cursorUp(this.numberOfLines);
 };
 
 /**
- * Run `fn(test[, done])` after running tests.
+ * Append the rainbow.
  *
- * @param {Function} fn
- * @return {Suite} for chaining
  * @api private
  */
 
-Suite.prototype.afterAll = function(title, fn){
-  if (this.pending) return this;
-  if ('function' === typeof title) {
-    fn = title;
-    title = fn.name;
+NyanCat.prototype.appendRainbow = function(){
+  var segment = this.tick ? '_' : '-';
+  var rainbowified = this.rainbowify(segment);
+
+  for (var index = 0; index < this.numberOfLines; index++) {
+    var trajectory = this.trajectories[index];
+    if (trajectory.length >= this.trajectoryWidthMax) trajectory.shift();
+    trajectory.push(rainbowified);
   }
-  title = '"after all" hook' + (title ? ': ' + title : '');
-
-  var hook = new Hook(title, fn);
-  hook.parent = this;
-  hook.timeout(this.timeout());
-  hook.enableTimeouts(this.enableTimeouts());
-  hook.slow(this.slow());
-  hook.ctx = this.ctx;
-  this._afterAll.push(hook);
-  this.emit('afterAll', hook);
-  return this;
 };
 
 /**
- * Run `fn(test[, done])` before each test case.
+ * Draw the rainbow.
  *
- * @param {Function} fn
- * @return {Suite} for chaining
  * @api private
  */
 
-Suite.prototype.beforeEach = function(title, fn){
-  if (this.pending) return this;
-  if ('function' === typeof title) {
-    fn = title;
-    title = fn.name;
-  }
-  title = '"before each" hook' + (title ? ': ' + title : '');
+NyanCat.prototype.drawRainbow = function(){
+  var self = this;
 
-  var hook = new Hook(title, fn);
-  hook.parent = this;
-  hook.timeout(this.timeout());
-  hook.enableTimeouts(this.enableTimeouts());
-  hook.slow(this.slow());
-  hook.ctx = this.ctx;
-  this._beforeEach.push(hook);
-  this.emit('beforeEach', hook);
-  return this;
+  this.trajectories.forEach(function(line, index) {
+    write('\u001b[' + self.scoreboardWidth + 'C');
+    write(line.join(''));
+    write('\n');
+  });
+
+  this.cursorUp(this.numberOfLines);
 };
 
 /**
- * Run `fn(test[, done])` after each test case.
+ * Draw the nyan cat
  *
- * @param {Function} fn
- * @return {Suite} for chaining
  * @api private
  */
 
-Suite.prototype.afterEach = function(title, fn){
-  if (this.pending) return this;
-  if ('function' === typeof title) {
-    fn = title;
-    title = fn.name;
-  }
-  title = '"after each" hook' + (title ? ': ' + title : '');
+NyanCat.prototype.drawNyanCat = function() {
+  var self = this;
+  var startWidth = this.scoreboardWidth + this.trajectories[0].length;
+  var color = '\u001b[' + startWidth + 'C';
+  var padding = '';
 
-  var hook = new Hook(title, fn);
-  hook.parent = this;
-  hook.timeout(this.timeout());
-  hook.enableTimeouts(this.enableTimeouts());
-  hook.slow(this.slow());
-  hook.ctx = this.ctx;
-  this._afterEach.push(hook);
-  this.emit('afterEach', hook);
-  return this;
+  write(color);
+  write('_,------,');
+  write('\n');
+
+  write(color);
+  padding = self.tick ? '  ' : '   ';
+  write('_|' + padding + '/\\_/\\ ');
+  write('\n');
+
+  write(color);
+  padding = self.tick ? '_' : '__';
+  var tail = self.tick ? '~' : '^';
+  var face;
+  write(tail + '|' + padding + this.face() + ' ');
+  write('\n');
+
+  write(color);
+  padding = self.tick ? ' ' : '  ';
+  write(padding + '""  "" ');
+  write('\n');
+
+  this.cursorUp(this.numberOfLines);
 };
 
 /**
- * Add a test `suite`.
- *
- * @param {Suite} suite
- * @return {Suite} for chaining
- * @api private
- */
-
-Suite.prototype.addSuite = function(suite){
-  suite.parent = this;
-  suite.timeout(this.timeout());
-  suite.enableTimeouts(this.enableTimeouts());
-  suite.slow(this.slow());
-  suite.bail(this.bail());
-  this.suites.push(suite);
-  this.emit('suite', suite);
-  return this;
-};
-
-/**
- * Add a `test` to this suite.
- *
- * @param {Test} test
- * @return {Suite} for chaining
- * @api private
- */
-
-Suite.prototype.addTest = function(test){
-  test.parent = this;
-  test.timeout(this.timeout());
-  test.enableTimeouts(this.enableTimeouts());
-  test.slow(this.slow());
-  test.ctx = this.ctx;
-  this.tests.push(test);
-  this.emit('test', test);
-  return this;
-};
-
-/**
- * Return the full title generated by recursively
- * concatenating the parent's full title.
+ * Draw nyan cat face.
  *
  * @return {String}
- * @api public
+ * @api private
  */
 
-Suite.prototype.fullTitle = function(){
-  if (this.parent) {
-    var full = this.parent.fullTitle();
-    if (full) return full + ' ' + this.title;
+NyanCat.prototype.face = function() {
+  var stats = this.stats;
+  if (stats.failures) {
+    return '( x .x)';
+  } else if (stats.pending) {
+    return '( o .o)';
+  } else if(stats.passes) {
+    return '( ^ .^)';
+  } else {
+    return '( - .-)';
   }
-  return this.title;
-};
-
-/**
- * Return the total number of tests.
- *
- * @return {Number}
- * @api public
- */
-
-Suite.prototype.total = function(){
-  return utils.reduce(this.suites, function(sum, suite){
-    return sum + suite.total();
-  }, 0) + this.tests.length;
-};
-
-/**
- * Iterates through each suite recursively to find
- * all tests. Applies a function in the format
- * `fn(test)`.
- *
- * @param {Function} fn
- * @return {Suite}
- * @api private
- */
-
-Suite.prototype.eachTest = function(fn){
-  utils.forEach(this.tests, fn);
-  utils.forEach(this.suites, function(suite){
-    suite.eachTest(fn);
-  });
-  return this;
-};
-
-}); // module: suite.js
-
-require.register("test.js", function(module, exports, require){
-
-/**
- * Module dependencies.
- */
-
-var Runnable = require('./runnable');
-
-/**
- * Expose `Test`.
- */
-
-module.exports = Test;
-
-/**
- * Initialize a new `Test` with the given `title` and callback `fn`.
- *
- * @param {String} title
- * @param {Function} fn
- * @api private
- */
-
-function Test(title, fn) {
-  Runnable.call(this, title, fn);
-  this.pending = !fn;
-  this.type = 'test';
 }
 
 /**
- * Inherit from `Runnable.prototype`.
+ * Move cursor up `n`.
+ *
+ * @param {Number} n
+ * @api private
+ */
+
+NyanCat.prototype.cursorUp = function(n) {
+  write('\u001b[' + n + 'A');
+};
+
+/**
+ * Move cursor down `n`.
+ *
+ * @param {Number} n
+ * @api private
+ */
+
+NyanCat.prototype.cursorDown = function(n) {
+  write('\u001b[' + n + 'B');
+};
+
+/**
+ * Generate rainbow colors.
+ *
+ * @return {Array}
+ * @api private
+ */
+
+NyanCat.prototype.generateColors = function(){
+  var colors = [];
+
+  for (var i = 0; i < (6 * 7); i++) {
+    var pi3 = Math.floor(Math.PI / 3);
+    var n = (i * (1.0 / 6));
+    var r = Math.floor(3 * Math.sin(n) + 3);
+    var g = Math.floor(3 * Math.sin(n + 2 * pi3) + 3);
+    var b = Math.floor(3 * Math.sin(n + 4 * pi3) + 3);
+    colors.push(36 * r + 6 * g + b + 16);
+  }
+
+  return colors;
+};
+
+/**
+ * Apply rainbow to the given `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+NyanCat.prototype.rainbowify = function(str){
+  var color = this.rainbowColors[this.colorIndex % this.rainbowColors.length];
+  this.colorIndex += 1;
+  return '\u001b[38;5;' + color + 'm' + str + '\u001b[0m';
+};
+
+/**
+ * Stdout helper.
+ */
+
+function write(string) {
+  process.stdout.write(string);
+}
+
+/**
+ * Inherit from `Base.prototype`.
  */
 
 function F(){};
-F.prototype = Runnable.prototype;
-Test.prototype = new F;
-Test.prototype.constructor = Test;
+F.prototype = Base.prototype;
+NyanCat.prototype = new F;
+NyanCat.prototype.constructor = NyanCat;
 
 
-}); // module: test.js
+}); // module: reporters/nyan.js
 
-require.register("utils.js", function(module, exports, require){
+require.register("reporters/xunit.js", function(module, exports, require){
+
 /**
  * Module dependencies.
  */
 
-var fs = require('browser/fs')
-  , path = require('browser/path')
-  , basename = path.basename
-  , exists = fs.existsSync || path.existsSync
-  , glob = require('browser/glob')
-  , join = path.join
-  , debug = require('browser/debug')('mocha:watch');
+var Base = require('./base')
+  , escape = require('../utils').escape;
 
 /**
- * Ignored directories.
+ * Save timer references to avoid Sinon interfering (see GH-237).
  */
 
-var ignore = ['node_modules', '.git'];
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
 
+/**
+ * Expose `XUnit`.
+ */
+
+exports = module.exports = XUnit;
+
+/**
+ * Initialize a new `XUnit` reporter.
+ *
+ * @param {Runner} runner
+ * @api public
+ */
+
+function XUnit(runner) {
+  Base.call(this, runner);
+  var stats = this.stats
+    , tests = []
+    , self = this;
+
+  runner.on('pending', function(test){
+    tests.push(test);
+  });
+
+  runner.on('pass', function(test){
+    tests.push(test);
+  });
+
+  runner.on('fail', function(test){
+    tests.push(test);
+  });
+
+  runner.on('end', function(){
+    console.log(tag('testsuite', {
+        name: 'Mocha Tests'
+      , tests: stats.tests
+      , failures: stats.failures
+      , errors: stats.failures
+      , skipped: stats.tests - stats.failures - stats.passes
+      , timestamp: (new Date).toUTCString()
+      , time: (stats.duration / 1000) || 0
+    }, false));
+
+    tests.forEach(test);
+    console.log('</testsuite>');
+  });
+}
+
+/**
+ * Inherit from `Base.prototype`.
+ */
+
+function F(){};
+F.prototype = Base.prototype;
+XUnit.prototype = new F;
+XUnit.prototype.constructor = XUnit;
+
+
+/**
+ * Output tag for the given `test.`
+ */
+
+function test(test) {
+  var attrs = {
+      classname: test.parent.fullTitle()
+    , name: test.title
+    , time: (test.duration / 1000) || 0
+  };
+
+  if ('failed' == test.state) {
+    var err = test.err;
+    console.log(tag('testcase', attrs, false, tag('failure', {}, false, cdata(escape(err.message) + "\n" + err.stack))));
+  } else if (test.pending) {
+    console.log(tag('testcase', attrs, false, tag('skipped', {}, true)));
+  } else {
+    console.log(tag('testcase', attrs, true) );
+  }
+}
+
+/**
+ * HTML tag helper.
+ */
+
+function tag(name, attrs, close, content) {
+  var end = close ? '/>' : '>'
+    , pairs = []
+    , tag;
+
+  for (var key in attrs) {
+    pairs.push(key + '="' + escape(attrs[key]) + '"');
+  }
+
+  tag = '<' + name + (pairs.length ? ' ' + pairs.join(' ') : '') + end;
+  if (content) tag += content + '</' + name + end;
+  return tag;
+}
+
+/**
+ * Return cdata escaped CDATA `str`.
+ */
+
+function cdata(str) {
+  return '<![CDATA[' + escape(str) + ']]>';
+}
+
+}); // module: reporters/xunit.js
+
+require.register("utils.js", function(module, exports, require){
 /**
  * Escape special characters in the given string of html.
  *
@@ -5657,59 +5546,6 @@ exports.keys = Object.keys || function(obj) {
   return keys;
 };
 
-/**
- * Watch the given `files` for changes
- * and invoke `fn(file)` on modification.
- *
- * @param {Array} files
- * @param {Function} fn
- * @api private
- */
-
-exports.watch = function(files, fn){
-  var options = { interval: 100 };
-  files.forEach(function(file){
-    debug('file %s', file);
-    fs.watchFile(file, options, function(curr, prev){
-      if (prev.mtime < curr.mtime) fn(file);
-    });
-  });
-};
-
-/**
- * Ignored files.
- */
-
-function ignored(path){
-  return !~ignore.indexOf(path);
-}
-
-/**
- * Lookup files in the given `dir`.
- *
- * @return {Array}
- * @api private
- */
-
-exports.files = function(dir, ext, ret){
-  ret = ret || [];
-  ext = ext || ['js'];
-
-  var re = new RegExp('\\.(' + ext.join('|') + ')$');
-
-  fs.readdirSync(dir)
-  .filter(ignored)
-  .forEach(function(path){
-    path = join(dir, path);
-    if (fs.statSync(path).isDirectory()) {
-      exports.files(path, ext, ret);
-    } else if (path.match(re)) {
-      ret.push(path);
-    }
-  });
-
-  return ret;
-};
 
 /**
  * Compute a slug from the given `str`.
@@ -5859,53 +5695,48 @@ exports.canonicalize = function(obj, stack) {
    return canonicalizedObj;
  }
 
-/**
- * Lookup file names at the given `path`.
- */
-exports.lookupFiles = function lookupFiles(path, extensions, recursive) {
-  var files = [];
-  var re = new RegExp('\\.(' + extensions.join('|') + ')$');
-
-  if (!exists(path)) {
-    if (exists(path + '.js')) {
-      path += '.js';
-    } else {
-      files = glob.sync(path);
-      if (!files.length) throw new Error("cannot resolve path (or pattern) '" + path + "'");
-      return files;
-    }
-  }
-
-  try {
-    var stat = fs.statSync(path);
-    if (stat.isFile()) return path;
-  }
-  catch (ignored) {
-    return;
-  }
-
-  fs.readdirSync(path).forEach(function(file){
-    file = join(path, file);
-    try {
-      var stat = fs.statSync(file);
-      if (stat.isDirectory()) {
-        if (recursive) {
-          files = files.concat(lookupFiles(file, recursive));
-        }
-        return;
-      }
-    }
-    catch (ignored) {
-      return;
-    }
-    if (!stat.isFile() || !re.test(file) || basename(file)[0] === '.') return;
-    files.push(file);
-  });
-
-  return files;
-}
 
 }); // module: utils.js
+
+require.register("test.js", function(module, exports, require){
+
+/**
+ * Module dependencies.
+ */
+
+var Runnable = require('./runnable');
+
+/**
+ * Expose `Test`.
+ */
+
+module.exports = Test;
+
+/**
+ * Initialize a new `Test` with the given `title` and callback `fn`.
+ *
+ * @param {String} title
+ * @param {Function} fn
+ * @api private
+ */
+
+function Test(title, fn) {
+  Runnable.call(this, title, fn);
+  this.pending = !fn;
+  this.type = 'test';
+}
+
+/**
+ * Inherit from `Runnable.prototype`.
+ */
+
+function F(){};
+F.prototype = Runnable.prototype;
+Test.prototype = new F;
+Test.prototype.constructor = Test;
+
+
+}); // module: test.js
 // The global object is "self" in Web Workers.
 var global = (function() { return this; })();
 

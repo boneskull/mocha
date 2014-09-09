@@ -13,6 +13,7 @@ var program = require('commander')
   , exists = fs.existsSync || path.existsSync
   , Mocha = require('../')
   , utils = Mocha.utils
+  , fsutils = Mocha.fsutils
   , interfaces = Mocha.interfaces
   , join = path.join
   , basename = path.basename
@@ -300,7 +301,7 @@ var files = []
 if (!args.length) args.push('test');
 
 args.forEach(function(arg){
-  files = files.concat(utils.lookupFiles(arg, extensions, program.recursive));
+  files = files.concat(fsutils.lookupFiles(arg, extensions, program.recursive));
 });
 
 // resolve
@@ -361,7 +362,7 @@ if (program.watch) {
     loadAndRun();
   }
 
-  utils.watch(watchFiles, function(){
+  fsutils.watch(watchFiles, function(){
     runAgain = true;
     if (runner) {
       runner.abort();

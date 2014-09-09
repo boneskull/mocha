@@ -10,6 +10,7 @@ var fs = require('fs');
  */
 
 var args = process.argv.slice(2)
+  , ready = []
   , pending = args.length
   , files = {};
 
@@ -18,13 +19,17 @@ console.log('');
 // parse arguments
 
 args.forEach(function(file){
-  var mod = file.replace('lib/', '');
   fs.readFile(file, 'utf8', function(err, js){
     if (err) throw err;
-    console.log('  \u001b[90mcompile : \u001b[0m\u001b[36m%s\u001b[0m', file);
-    files[file] = ~js.indexOf('require: off')
-      ? js
-      : parse(js);
+    if (js.indexOf('compile: off') === -1) {
+      console.log('  \u001b[90mcompile : \u001b[0m\u001b[36m%s\u001b[0m', file);
+      files[file] = ~js.indexOf('require: off')
+        ? js
+        : parse(js);
+      ready.push(file);
+    } else {
+      console.log(' \u001b[90mskipping : \u001b[0m\u001b[33m%s\u001b[0m', file);
+    }
     --pending || compile();
   });
 });
@@ -45,12 +50,9 @@ function parseRequires(js) {
   return js
     .replace(/require\('events'\)/g               , "require('browser/events')")
     .replace(/require\('debug'\)/g                , "require('browser/debug')")
-    .replace(/require\('path'\)/g                 , "require('browser/path')")
     .replace(/require\('diff'\)/g                 , "require('browser/diff')")
     .replace(/require\('tty'\)/g                  , "require('browser/tty')")
     .replace(/require\('escape-string-regexp'\)/g , "require('browser/escape-string-regexp')")
-    .replace(/require\('glob'\)/g                 , "require('browser/glob')")
-    .replace(/require\('fs'\)/g                   , "require('browser/fs')");
 }
 
 /**
@@ -79,7 +81,7 @@ function compile() {
   buf += 'require.resolve = ' + browser.resolve + ';\n\n';
   buf += 'require.register = ' + browser.register + ';\n\n';
   buf += 'require.relative = ' + browser.relative + ';\n\n';
-  args.forEach(function(file){
+  ready.forEach(function(file){
     var js = files[file];
     file = file.replace('lib/', '');
     buf += '\nrequire.register("' + file + '", function(module, exports, require){\n';
