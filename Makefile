@@ -100,6 +100,9 @@ test-reporters:
 	@./bin/mocha \
 		--reporter $(REPORTER) \
 		test/reporters/*.js
+	@./node_modules/.bin/browserify --require should \
+		--entry test/reporters/*.js > test/build/browser-tests.js && \
+	@./node_modules/.bin/karma start
 
 test-only:
 	@./bin/mocha \
