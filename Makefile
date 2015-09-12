@@ -122,6 +122,9 @@ test-mocha:
 		--reporter $(REPORTER) \
 		test/mocha
 
+test-auto:
+	@node test/auto/bdd.js
+
 non-tty:
 	@./bin/mocha \
 		--reporter dot \
