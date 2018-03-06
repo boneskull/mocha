@@ -34,16 +34,17 @@ const test = (testName, mochaParams) => oneLine`${process.env.COVERAGE
   : ''} node ${MOCHA_BIN} ${mochaParams}
   `;
 
-// each of these tests should be run individually when running concurrent tests
-// because they are slow
+// This is building an object of nps script definitions, to be inserted into `exports.scripts`
 const nodeIntegrationTestScripts = fs.readdirSync('test/integration')
   .reduce((acc, filename) => {
+// each of these tests should be run individually when running concurrent tests
+// because they are slow
     if (/.spec$/.test(path.parse(filename).name)) {
       const name = filename.slice(0, -8); // remove all extensions
       acc[name] = {
         script: test(name, oneLine`
-        --timeout 10000
-        --slow 1000
+        --timeout 5000
+        --slow 500
         test/integration/${filename}
         `),
         description: `Run Node.js "${name}" integration tests`
@@ -120,21 +121,18 @@ exports.scripts = {
       description: 'Delete mocha.js build artifact'
     },
     test: {
-    default: {
-      script: series('nps clean',
-        'nps build',
-        concurrent.nps('lint.code',
-          'lint.markdown',
-          'test.bundle',
-          ...nodeTestNames,
-          ...browserTestNames
-        )
-      ),
-      description: 'Lint code, run Node.js and browser tests'
-      },
-      node: {
       default: {
-        script: concurrent.nps(...nodeTestNames),
+        script: concurrent.nps('lint.code',
+          'lint.markdown',
+          'test.node',
+          'test.browser',
+          'test.bundle'
+        ),
+        description: 'Lint code, run Node.js and browser tests'
+    },
+    node: {
+      default: {
+        script: series.nps(...nodeTestNames),
         description: 'Run Node.js tests'
         },
         bdd: {
@@ -162,7 +160,7 @@ exports.scripts = {
         },
       integration: Object.assign({
         default: {
-          script: concurrent.nps(...nodeIntegrationTestNames),
+          script: series.nps(...nodeIntegrationTestNames),
           description: 'Run Node.js integration tests'
         }
       }, nodeIntegrationTestScripts),
@@ -172,7 +170,7 @@ exports.scripts = {
         },
         compilers: {
         default: {
-          script: concurrent.nps('test.node.compilers.coffee',
+          script: series.nps('test.node.compilers.coffee',
             'test.node.compilers.custom',
             'test.node.compilers.multiple'
           ),
@@ -217,7 +215,7 @@ exports.scripts = {
         },
         only: {
         default: {
-          script: concurrent.nps(...nodeOnlyTestNames),
+          script: series.nps(...nodeOnlyTestNames),
             description: 'Run all tests for .only()'
           },
           bdd: {
@@ -266,10 +264,7 @@ exports.scripts = {
       },
       browser: {
       default: {
-        script: series('nps clean',
-          'nps build',
-          concurrent.nps(...browserTestNames)
-        ),
+        script: series.nps('clean', 'build', ...browserTestNames),
           description: 'Compile Mocha and run all tests in browser environment'
         },
         unit: {
@@ -295,7 +290,7 @@ exports.scripts = {
       },
       nonTTY: {
       default: {
-        script: concurrent.nps('test.nonTTY.dot',
+        script: series.nps('test.nonTTY.dot',
           'test.nonTTY.list',
           'test.nonTTY.spec'
         ),
