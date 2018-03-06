@@ -42,8 +42,8 @@ const nodeIntegrationTestScripts = fs.readdirSync('test/integration')
       const name = filename.slice(0, -8); // remove all extensions
       acc[name] = {
         script: test(name, oneLine`
-        --timeout 5000
-        --slow 500
+        --timeout 10000
+        --slow 1000
         test/integration/${filename}
         `),
         description: `Run Node.js "${name}" integration tests`
