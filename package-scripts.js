@@ -17,8 +17,11 @@
 
 const path = require('path');
 const fs = require('fs');
-const {series, commonTags, concurrent, crossEnv} = require('nps-utils');
-const {oneLine} = commonTags;
+const npsUtils = require('nps-utils');
+const series = npsUtils.series;
+const concurrent = npsUtils.concurrent;
+const crossEnv = npsUtils.crossEnv;
+const oneLine = npsUtils.commonTags.oneLine;
 
 const MOCHA_BIN = path.join('bin', 'mocha');
 
