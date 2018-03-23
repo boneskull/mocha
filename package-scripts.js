@@ -29,32 +29,39 @@ const MOCHA_BIN = path.join('bin', 'mocha');
  * @param {string} mochaParams Parameters for the mocha CLI to execute the desired test.
  * @returns {string} Command string to be executed by nps.
  */
-const test = (testName, mochaParams) => oneLine`${process.env.COVERAGE
-  ? `nyc --no-clean --report-dir coverage/reports/${testName}`
-  : ''} node ${MOCHA_BIN} ${mochaParams}
+const test = (testName, mochaParams) => oneLine`${
+  process.env.COVERAGE
+    ? `nyc --no-clean --report-dir coverage/reports/${testName}`
+    : ''
+} node ${MOCHA_BIN} ${mochaParams}
   `;
 
 // This is building an object of nps script definitions, to be inserted into `exports.scripts`
-const nodeIntegrationTestScripts = fs.readdirSync('test/integration')
+const nodeIntegrationTestScripts = fs
+  .readdirSync('test/integration')
   .reduce((acc, filename) => {
-// each of these tests should be run individually when running concurrent tests
-// because they are slow
+    // each of these tests should be run individually when running concurrent tests
+    // because they are slow
     if (/.spec$/.test(path.parse(filename).name)) {
       const name = filename.slice(0, -8); // remove all extensions
       acc[name] = {
-        script: test(name, oneLine`
+        script: test(
+          name,
+          oneLine`
         --timeout 5000
         --slow 500
         test/integration/${filename}
-        `),
+        `
+        ),
         description: `Run Node.js "${name}" integration tests`
       };
-}
+    }
     return acc;
   }, {});
 
-const nodeIntegrationTestNames = Object.keys(nodeIntegrationTestScripts)
-  .map(name => `test.node.integration.${name}`);
+const nodeIntegrationTestNames = Object.keys(nodeIntegrationTestScripts).map(
+  name => `test.node.integration.${name}`
+);
 
 const nodeOnlyTestNames = [
   'test.node.only.bdd',
@@ -102,242 +109,284 @@ exports.scripts = {
       `,
     description: 'Bundle Mocha for the browser'
   },
-    lint: {
+  lint: {
     default: {
       script: concurrent.nps('lint.code', 'lint.markdown'),
-        description: 'Lint code and markdown'
-      },
-      code: {
-        script: 'eslint . "bin/*"',
+      description: 'Lint code and markdown'
+    },
+    code: {
+      script: 'eslint . "bin/*"',
       description: 'Lint code with ESLint'
-      },
-      markdown: {
-        script: 'markdownlint "*.md" "docs/**/*.md" ".github/*.md"',
-        description: 'Lint Markdown files'
-      }
     },
-    clean: {
+    markdown: {
+      script: 'markdownlint "*.md" "docs/**/*.md" ".github/*.md"',
+      description: 'Lint Markdown files'
+    }
+  },
+  clean: {
     script: 'rimraf mocha.js',
-      description: 'Delete mocha.js build artifact'
-    },
-    test: {
-      default: {
-        script: concurrent.nps('lint.code',
-          'lint.markdown',
-          'test.node',
-          'test.browser',
-          'test.bundle'
-        ),
-        description: 'Lint code, run Node.js and browser tests'
+    description: 'Delete mocha.js build artifact'
+  },
+  test: {
+    default: {
+      script: concurrent.nps(
+        'lint.code',
+        'lint.markdown',
+        'test.node',
+        'test.browser',
+        'test.bundle'
+      ),
+      description: 'Lint code, run Node.js and browser tests'
     },
     node: {
       default: {
         script: series.nps(...nodeTestNames),
         description: 'Run Node.js tests'
-        },
-        bdd: {
-          script: test('bdd', '--ui bdd test/interfaces/bdd.spec'),
+      },
+      bdd: {
+        script: test('bdd', '--ui bdd test/interfaces/bdd.spec'),
         description: 'Test Node.js BDD interface'
-        },
-        tdd: {
-          script: test('tdd', '--ui tdd test/interfaces/tdd.spec'),
+      },
+      tdd: {
+        script: test('tdd', '--ui tdd test/interfaces/tdd.spec'),
         description: 'Test Node.js TDD interface'
-        },
-        qunit: {
-          script: test('qunit', '--ui qunit test/interfaces/qunit.spec'),
+      },
+      qunit: {
+        script: test('qunit', '--ui qunit test/interfaces/qunit.spec'),
         description: 'Test Node.js QUnit interace'
-        },
-        exports: {
-          script: test('exports', '--ui exports test/interfaces/exports.spec'),
+      },
+      exports: {
+        script: test('exports', '--ui exports test/interfaces/exports.spec'),
         description: 'Test Node.js exports interface'
-        },
-        unit: {
-        script: test('unit', oneLine`
+      },
+      unit: {
+        script: test(
+          'unit',
+          oneLine`
           "test/unit/*.spec.js"
           "test/node-unit/*.spec.js"
-          `),
+          `
+        ),
         description: 'Run Node.js unit tests'
+      },
+      integration: Object.assign(
+        {
+          default: {
+            script: series.nps(...nodeIntegrationTestNames),
+            description: 'Run Node.js integration tests'
+          }
         },
-      integration: Object.assign({
-        default: {
-          script: series.nps(...nodeIntegrationTestNames),
-          description: 'Run Node.js integration tests'
-        }
-      }, nodeIntegrationTestScripts),
-        jsapi: {
-          script: 'node test/jsapi',
+        nodeIntegrationTestScripts
+      ),
+      jsapi: {
+        script: 'node test/jsapi',
         description: 'Run Mocha API tests'
-        },
-        compilers: {
+      },
+      compilers: {
         default: {
-          script: series.nps('test.node.compilers.coffee',
+          script: series.nps(
+            'test.node.compilers.coffee',
             'test.node.compilers.custom',
             'test.node.compilers.multiple'
           ),
-            description: 'Test deprecated --compilers flag'
-          },
-          coffee: {
+          description: 'Test deprecated --compilers flag'
+        },
+        coffee: {
           script: test(
             'compilers-coffee',
             '--compilers coffee:coffee-script/register test/compiler'
           ),
-            description: 'Run coffeescript compiler tests using deprecated --compilers flag'
-          },
-          custom: {
+          description:
+            'Run coffeescript compiler tests using deprecated --compilers flag'
+        },
+        custom: {
           script: test(
             'compilers-custom',
             '--compilers foo:./test/compiler-fixtures/foo.fixture test/compiler'
           ),
-            description: 'Run custom compiler test using deprecated --compilers flag'
-          },
-          multiple: {
+          description:
+            'Run custom compiler test using deprecated --compilers flag'
+        },
+        multiple: {
           script: test(
             'compilers-multiple',
             '--compilers coffee:coffee-script/register,foo:./test/compiler-fixtures/foo.fixture test/compiler'
           ),
-            description: 'Test deprecated --compilers flag using multiple compilers'
-          }
-        },
-        requires: {
-        script: test('requires', `oneLine
+          description:
+            'Test deprecated --compilers flag using multiple compilers'
+        }
+      },
+      requires: {
+        script: test(
+          'requires',
+          `oneLine
           --require coffee-script/register
           --require test/require/a.js
           --require test/require/b.coffee
           --require test/require/c.js
           --require test/require/d.coffee
           test/require/require.spec.js
-        `),
-          description: 'Test --require flag'
-        },
-        reporters: {
-          script: test('reporters', '"test/reporters/*.spec.js"'),
-          description: 'Test reporters'
-        },
-        only: {
+        `
+        ),
+        description: 'Test --require flag'
+      },
+      reporters: {
+        script: test('reporters', '"test/reporters/*.spec.js"'),
+        description: 'Test reporters'
+      },
+      only: {
         default: {
           script: series.nps(...nodeOnlyTestNames),
-            description: 'Run all tests for .only()'
-          },
-          bdd: {
-          script: test('only-bdd', oneLine`
-            --ui bdd
-            test/only/bdd.spec
-            `),
-            description: 'Test .only() with BDD interface'
-          },
-          tdd: {
-          script: test('only-tdd', oneLine`
-            --ui tdd
-            test/only/tdd.spec
-            `),
-            description: 'Test .only() with TDD interface'
-          },
-          bddRequire: {
-          script: test('only-bdd-require', oneLine`
-            --ui qunit
-            test/only/bdd-require.spec
-            `),
-            description: 'Test .only() with require("mocha") interface'
-          },
-          globalBdd: {
-          script: test('global-only-bdd', oneLine`
-            --ui bdd
-            test/only/global/bdd.spec
-            `),
-            description: 'Test .only() in root suite with BDD interface'
-          },
-          globalTdd: {
-          script: test('global-only-tdd', oneLine`
-            --ui tdd
-            test/only/global/tdd.spec
-            `),
-            description: 'Test .only() in root suite with TDD interface'
-          },
-          globalQunit: {
-          script: test('global-only-qunit', oneLine`
-            --ui qunit
-            test/only/global/qunit.spec
-            `),
-            description: 'Test .only() in root suite with QUnit interface'
-          }
-        }
-      },
-      browser: {
-      default: {
-        script: series.nps('clean', 'build', ...browserTestNames),
-          description: 'Compile Mocha and run all tests in browser environment'
-        },
-        unit: {
-        script: crossEnv('NODE_PATH=. karma start --single-run'),
-          description: 'Run unit tests for Mocha in browser'
+          description: 'Run all tests for .only()'
         },
         bdd: {
-        script: crossEnv('MOCHA_TEST=bdd nps test.browser.unit'),
-          description: 'Test BDD interface in browser'
+          script: test(
+            'only-bdd',
+            oneLine`
+            --ui bdd
+            test/only/bdd.spec
+            `
+          ),
+          description: 'Test .only() with BDD interface'
         },
         tdd: {
-        script: crossEnv('MOCHA_TEST=tdd nps test.browser.unit'),
-          description: 'Test TDD interface in browser'
+          script: test(
+            'only-tdd',
+            oneLine`
+            --ui tdd
+            test/only/tdd.spec
+            `
+          ),
+          description: 'Test .only() with TDD interface'
         },
-        qunit: {
-        script: crossEnv('MOCHA_TEST=qunit nps test.browser.unit'),
-          description: 'Test QUnit interface in browser'
+        bddRequire: {
+          script: test(
+            'only-bdd-require',
+            oneLine`
+            --ui qunit
+            test/only/bdd-require.spec
+            `
+          ),
+          description: 'Test .only() with require("mocha") interface'
         },
-        esm: {
-        script: crossEnv('MOCHA_TEST=esm nps test.browser.unit'),
-          description: 'Test mocha ESM support'
+        globalBdd: {
+          script: test(
+            'global-only-bdd',
+            oneLine`
+            --ui bdd
+            test/only/global/bdd.spec
+            `
+          ),
+          description: 'Test .only() in root suite with BDD interface'
+        },
+        globalTdd: {
+          script: test(
+            'global-only-tdd',
+            oneLine`
+            --ui tdd
+            test/only/global/tdd.spec
+            `
+          ),
+          description: 'Test .only() in root suite with TDD interface'
+        },
+        globalQunit: {
+          script: test(
+            'global-only-qunit',
+            oneLine`
+            --ui qunit
+            test/only/global/qunit.spec
+            `
+          ),
+          description: 'Test .only() in root suite with QUnit interface'
         }
-      },
-      nonTTY: {
+      }
+    },
+    browser: {
       default: {
-        script: series.nps('test.nonTTY.dot',
+        script: series.nps('clean', 'build', ...browserTestNames),
+        description: 'Compile Mocha and run all tests in browser environment'
+      },
+      unit: {
+        script: crossEnv('NODE_PATH=. karma start --single-run'),
+        description: 'Run unit tests for Mocha in browser'
+      },
+      bdd: {
+        script: crossEnv('MOCHA_TEST=bdd nps test.browser.unit'),
+        description: 'Test BDD interface in browser'
+      },
+      tdd: {
+        script: crossEnv('MOCHA_TEST=tdd nps test.browser.unit'),
+        description: 'Test TDD interface in browser'
+      },
+      qunit: {
+        script: crossEnv('MOCHA_TEST=qunit nps test.browser.unit'),
+        description: 'Test QUnit interface in browser'
+      },
+      esm: {
+        script: crossEnv('MOCHA_TEST=esm nps test.browser.unit'),
+        description: 'Test mocha ESM support'
+      }
+    },
+    nonTTY: {
+      default: {
+        script: series.nps(
+          'test.nonTTY.dot',
           'test.nonTTY.list',
           'test.nonTTY.spec'
         ),
-          description: 'Run all tests for non-TTY terminals'
-        },
-        dot: {
-        script: test('non-tty-dot', oneLine`
+        description: 'Run all tests for non-TTY terminals'
+      },
+      dot: {
+        script: test(
+          'non-tty-dot',
+          oneLine`
           --reporter dot
           test/interfaces/bdd.spec 2>&1 > /tmp/dot.out &&
           echo "dot:" &&
           cat /tmp/dot.out
-         `),
-          description: 'Test non-TTY dot reporter'
-        },
-        list: {
-        script: test('non-tty-list', oneLine`
+         `
+        ),
+        description: 'Test non-TTY dot reporter'
+      },
+      list: {
+        script: test(
+          'non-tty-list',
+          oneLine`
           --reporter list
           test/interfaces/bdd.spec 2>&1 > /tmp/list.out &&
           echo "list:" &&
           cat /tmp/list.out
-          `),
-          description: 'Test non-TTY list reporter'
-        },
-        spec: {
-        script: test('non-tty-dot', oneLine`
+          `
+        ),
+        description: 'Test non-TTY list reporter'
+      },
+      spec: {
+        script: test(
+          'non-tty-dot',
+          oneLine`
           --reporter spec
           test/interfaces/bdd.spec 2>&1 > /tmp/spec.out &&
           echo "spec:" &&
           cat /tmp/spec.out
-          `),
-          description: 'Test non-TTY spec reporter'
-        }
-      },
-      bundle: {
-        default: 'nps test.bundle.all',
-        all: {
-          script: 'nps clean build.mochajs test.bundle.amd',
-          description: 'Compile Mocha and run all tests for bundle files'
-        },
-        amd: {
-          script: test('amd', 'test/bundle/amd.spec'),
-          description: 'Test bundle files for AMD'
-        }
+          `
+        ),
+        description: 'Test non-TTY spec reporter'
       }
     },
-    coveralls: {
-      script: 'nyc report --reporter=text-lcov | coveralls',
+    bundle: {
+      default: 'nps test.bundle.all',
+      all: {
+        script: 'nps clean build.mochajs test.bundle.amd',
+        description: 'Compile Mocha and run all tests for bundle files'
+      },
+      amd: {
+        script: test('amd', 'test/bundle/amd.spec'),
+        description: 'Test bundle files for AMD'
+      }
+    }
+  },
+  coveralls: {
+    script: 'nyc report --reporter=text-lcov | coveralls',
     description: 'Send code coverage report to Coveralls'
   },
   docs: {
@@ -356,7 +405,8 @@ exports.scripts = {
       description: 'Build mochajs.org with Jekyll'
     },
     optimize: {
-      script: series(oneLine`
+      script: series(
+        oneLine`
         buildProduction docs/_site/index.html
         --outroot docs/_dist
         --canonicalroot https://mochajs.org/
@@ -376,7 +426,9 @@ exports.scripts = {
       description: 'Rebuild mochajs.org Table of Contents'
     },
     watch: {
-      script: series('nps docs.toc', oneLine`
+      script: series(
+        'nps docs.toc',
+        oneLine`
         bundle exec jekyll serve
         --source ./docs
         --destination ./docs/_site
@@ -384,7 +436,8 @@ exports.scripts = {
         --safe
         --drafts
         --watch
-        `),
+        `
+      ),
       description: 'Serve documentation locally & watch for changes'
     }
   }
