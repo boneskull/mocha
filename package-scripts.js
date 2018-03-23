@@ -81,15 +81,13 @@ const nodeTestNames = [
   'test.node.qunit',
   'test.node.exports',
   'test.node.unit',
-  ...nodeIntegrationTestNames,
   'test.node.jsapi',
   'test.node.compilers.coffee',
   'test.node.compilers.custom',
   'test.node.compilers.multiple',
   'test.node.requires',
-  'test.node.reporters',
-  ...nodeOnlyTestNames
-];
+  'test.node.reporters'
+].concat(nodeIntegrationTestNames, nodeOnlyTestNames);
 
 const browserTestNames = [
   'test.browser.unit',
@@ -143,7 +141,7 @@ exports.scripts = {
     },
     node: {
       default: {
-        script: series.nps(...nodeTestNames),
+        script: series.nps.apply(null, nodeTestNames),
         description: 'Run Node.js tests'
       },
       bdd: {
@@ -175,7 +173,7 @@ exports.scripts = {
       integration: Object.assign(
         {
           default: {
-            script: series.nps(...nodeIntegrationTestNames),
+            script: series.nps.apply(null, nodeIntegrationTestNames),
             description: 'Run Node.js integration tests'
           }
         },
@@ -239,7 +237,7 @@ exports.scripts = {
       },
       only: {
         default: {
-          script: series.nps(...nodeOnlyTestNames),
+          script: series.nps.apply(null, nodeOnlyTestNames),
           description: 'Run all tests for .only()'
         },
         bdd: {
@@ -306,7 +304,7 @@ exports.scripts = {
     },
     browser: {
       default: {
-        script: series.nps('clean', 'build', ...browserTestNames),
+        script: series.nps.apply(null, ['clean', 'build'].concat(browserTestNames)),
         description: 'Compile Mocha and run all tests in browser environment'
       },
       unit: {
@@ -379,7 +377,7 @@ exports.scripts = {
     bundle: {
       default: 'nps test.bundle.all',
       all: {
-        script: 'nps clean build.mochajs test.bundle.amd',
+        script: 'nps clean build test.bundle.amd',
         description: 'Compile Mocha and run all tests for bundle files'
       },
       amd: {
