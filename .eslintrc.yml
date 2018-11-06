@@ -23,6 +23,7 @@ overrides:
     - karma.conf.js
     - .wallaby.js
     - bin/*
+    - lib/config.js
     parserOptions:
       ecmaVersion: 6
     env:

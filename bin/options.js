@@ -64,7 +64,9 @@ function parseOptions(content) {
 function getOptions() {
   if (
     process.argv.length === 3 &&
-    (process.argv[2] === '-h' || process.argv[2] === '--help')
+    ['--help', '-h', '--version', '--reporters', '--interfaces'].indexOf(
+      process.argv[2]
+    ) >= 0
   ) {
     return;
   }
