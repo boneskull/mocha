@@ -313,6 +313,17 @@ describe('options', function() {
         done();
       });
     });
+
+    it('fails if there is empty suite marked only', function(done) {
+      run('options/forbid-only/only-empty-suite.js', args, function(err, res) {
+        if (err) {
+          done(err);
+          return;
+        }
+        expect(res, 'to have failed with error', onlyErrorMessage);
+        done();
+      });
+    });
   });
 
   describe('--forbid-pending', function() {
